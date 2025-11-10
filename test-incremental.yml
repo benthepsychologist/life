@@ -1,0 +1,16 @@
+workspace: ~/test-workspace
+
+sync:
+  incremental-test:
+    command: >
+      echo "Running incremental sync {extra_args}" > {output}
+    output: ~/test-workspace/incremental-output.txt
+    incremental_field: modified_on
+    state_file: ~/test-workspace/.sync_state.json
+    id_field: id
+    description: Test incremental sync with state tracking
+
+  simple-test:
+    command: echo "Simple sync without state" > {output}
+    output: ~/test-workspace/simple-output.txt
+    description: Simple sync without incremental state
