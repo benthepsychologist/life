@@ -225,16 +225,57 @@ Life-CLI supports these built-in variables:
 
 ## Development Status
 
-**Current:** Step 2 Complete - Core CLI framework with config loading and subcommands
+**Current:** Phase 1 Complete - Core orchestration layer with 124 passing tests
 
 **Roadmap:**
 - ✅ Step 1: Project scaffolding (LICENSE, pyproject.toml, structure)
 - ✅ Step 2: Core CLI framework (typer, config loader, subcommands)
-- 🚧 Step 3: State management & incremental sync (in progress)
+- ✅ Step 3: State management & incremental sync (complete)
 - ⏳ Step 4: Multi-command & workflow support
 - ⏳ Step 5: Documentation & examples
 
 See [.specwright/specs/life-cli-initial-spec.md](.specwright/specs/life-cli-initial-spec.md) for the full implementation plan.
+
+### Current Working Environment
+
+While life-cli's orchestration layer is being completed, a full set of production-ready CLI tools is available in a temporary monorepo setup at `~/tools/`. This allows immediate productivity without waiting for final architecture decisions.
+
+**Available Tools (15+ CLIs):**
+- `msg` - Gmail client for email operations (configured with OAuth)
+- `gws` - Google Workspace management (Drive, Sheets, Docs with folder registry)
+- `dv` - Dataverse query and sync operations
+- `cal`, `assess`, `mon`, `gen`, `rio`, `xl`, `fire`, `ingest` - Additional specialized tools
+
+**Working Directory Setup:**
+
+Work from `~/life-cockpit/` (not from the life-cli repo):
+```bash
+# Activate environment to add all tools to PATH
+source ~/life-cockpit/activate.sh
+
+# All tools now available
+msg --help        # Email operations
+gws --help        # Google Drive/Docs management
+dv --help         # Dataverse queries
+bash ~/tools/recipes/session_summary.sh <email>  # Automated workflows
+```
+
+**Data Segregation:**
+- Code/Tools: `~/tools/` (temporary monorepo)
+- Protected Health Information: `~/phi-data/` (client registries, temp files)
+- Orchestration config: `~/life-cockpit/` (working directory)
+
+**Production Workflow Example:**
+
+The session summary automation is fully operational:
+1. Fetches session data from Dataverse by client email
+2. Generates PDF summary with proper naming
+3. Sends email via Gmail (drben@benthepsychologist.com) with PDF attachment
+4. Uploads summary to client's Google Drive folder as Google Doc
+5. Includes Drive folder link in email
+6. Cleans up temporary files
+
+This temporary setup will be refactored once life-cli's orchestration capabilities mature and the data pipeline architecture is finalized.
 
 ## Architecture
 
