@@ -82,9 +82,22 @@ After installation, you can use Tab to autocomplete commands and options.
 
 ## Quick Start
 
-### 1. Create a config file
+### 1. Initialize a project
 
-Create `~/life.yml` or `./life.yml`:
+```bash
+# Create a new project (creates .life/config.yml)
+cd ~/my-project
+life init
+
+# Or specify a custom workspace
+life init --workspace ~/my-data
+```
+
+This creates `.life/config.yml` with sensible defaults for your project.
+
+### 2. Configure your tasks
+
+Edit `.life/config.yml` (or create `~/life.yml` or `./life.yml` for global config):
 
 ```yaml
 workspace: ~/my-data-workspace
@@ -132,7 +145,7 @@ status:
       echo "Events: $(jq length ~/my-data-workspace/calendar.json)"
 ```
 
-### 2. Run commands
+### 3. Run commands
 
 ```bash
 # Sync data from external sources
@@ -159,6 +172,23 @@ life --verbose sync contacts
 
 ## Commands
 
+### `life init`
+Initialize a new Life-CLI project. Creates `.life/config.yml` with default configuration.
+
+```bash
+# Initialize in current directory
+life init
+
+# Specify custom workspace
+life init --workspace ~/my-data
+
+# Force overwrite existing config
+life init --force
+
+# Preview what would be created
+life --dry-run init
+```
+
 ### `life sync <task>`
 Execute data synchronization tasks. Supports incremental syncing with state tracking.
 
@@ -171,12 +201,42 @@ Process data through transformation pipelines.
 ### `life status <task>`
 Run status checks and generate reports.
 
+### `life today`
+Create and manage daily operational notes with template support and LLM-powered reflection.
+
+```bash
+# Create today's daily note
+life today
+
+# Create note for specific date
+life today create 2025-11-15
+
+# Ask LLM about today's note (requires 'llm' CLI)
+life today prompt "What were my main accomplishments?"
+
+# Include previous 3 days as context
+life today prompt "What patterns do you see?" --context 3
+```
+
 ### Global Options
 - `--config PATH` / `-c PATH`: Path to config file (default: `~/life.yml` or `./life.yml`)
 - `--dry-run`: Show what would be executed without running commands
 - `--verbose` / `-v`: Enable verbose logging with timestamps
 
-## Configuration Reference
+## Configuration
+
+### Config File Locations
+
+Life-CLI looks for configuration in this order (first found wins):
+
+1. `./.life/config.yml` - Project-local (recommended, created by `life init`)
+2. `./life.yml` - Legacy local config
+3. `~/life.yml` - User global config
+4. `--config PATH` - Custom path (overrides all)
+
+**Best practice:** Use `life init` to create `.life/config.yml` in each project.
+
+### Configuration Reference
 
 ### Sync Tasks
 
@@ -223,9 +283,45 @@ Life-CLI supports these built-in variables:
 - `{extra_args}`: Injected for incremental syncs (Step 3 feature)
 - Custom variables: Any field in the task config can be referenced
 
+### Today Command Configuration
+
+The `today` command works relative to your current directory or workspace:
+
+**Default Behavior (no config):**
+- Daily notes: `./notes/daily/YYYY-MM-DD.md`
+- Template: `./notes/templates/daily-ops.md`
+
+**With workspace defined:**
+```yaml
+workspace: ~/my-workspace
+
+# Notes will be created in:
+# ~/my-workspace/notes/daily/YYYY-MM-DD.md
+```
+
+**Explicit paths:**
+```yaml
+today:
+  daily_dir: ~/my-notes/daily
+  template_path: ~/my-notes/templates/daily.md
+```
+
+This makes `life today` work like Git - it operates on your current working directory or uses configured paths.
+
+If template doesn't exist, a default template is created automatically with sections for:
+- Focus
+- Status Snapshot
+- Tasks
+- Reflection / "State of the Game"
+
+**LLM Integration:** The `prompt` subcommand requires the [`llm` CLI](https://llm.datasette.io/):
+```bash
+pip install llm
+```
+
 ## Development Status
 
-**Current:** Phase 1 Complete - Core orchestration layer with 124 passing tests
+**Current:** Phase 1 Complete - Core orchestration layer with 154 passing tests
 
 **Roadmap:**
 - ✅ Step 1: Project scaffolding (LICENSE, pyproject.toml, structure)

@@ -12,7 +12,7 @@ import typer
 import yaml
 
 from life import __version__
-from life.commands import config, merge, process, status, sync
+from life.commands import config, init, merge, process, status, sync, today
 from life.config import load_config
 
 # Initialize main app
@@ -23,10 +23,12 @@ app = typer.Typer(
 )
 
 # Add subcommands
+app.add_typer(init.app, name="init")
 app.add_typer(sync.app, name="sync")
 app.add_typer(merge.app, name="merge")
 app.add_typer(process.app, name="process")
 app.add_typer(status.app, name="status")
+app.add_typer(today.app, name="today")
 app.add_typer(config.app, name="config")
 
 # Global state for context
@@ -73,7 +75,9 @@ def main_callback(
     setup_logging(verbose)
 
     # Load config if a subcommand is being invoked
-    if ctx.invoked_subcommand and ctx.invoked_subcommand != "version":
+    # Some commands don't need config or create it (init, today)
+    commands_without_config = ["version", "init"]
+    if ctx.invoked_subcommand and ctx.invoked_subcommand not in commands_without_config:
         try:
             config = load_config(config_path)
             state["config"] = config
@@ -85,11 +89,23 @@ def main_callback(
                 logging.debug(f"Dry run: {dry_run}")
 
         except FileNotFoundError as e:
-            typer.echo(f"Error: {e}", err=True)
-            raise typer.Exit(1)
+            # Some commands can work without config (today has defaults)
+            if ctx.invoked_subcommand == "today":
+                if verbose:
+                    logging.debug("No config file found, using defaults for 'today' command")
+                state["config"] = {}
+                state["dry_run"] = dry_run
+                state["verbose"] = verbose
+            else:
+                typer.echo(f"Error: {e}", err=True)
+                raise typer.Exit(1)
         except yaml.YAMLError as e:
             typer.echo(f"Error: {e}", err=True)
             raise typer.Exit(1)
+    elif ctx.invoked_subcommand == "init":
+        # Init command needs dry_run and verbose flags but no config
+        state["dry_run"] = dry_run
+        state["verbose"] = verbose
 
     # Store state in context for subcommands
     ctx.obj = state

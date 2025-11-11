@@ -134,6 +134,8 @@ def sync_callback(ctx: typer.Context, task: str = typer.Argument(None)):
 
 **Why this design**: Each subcommand is independent, easy to understand, easy to extend.
 
+**Note on `today` command**: The `today` subcommand is conceptually different from data pipeline commands (`sync`, `merge`, `process`, `status`). While those commands orchestrate external CLI tools, `today` is a built-in utility for daily note management. It's included for convenience and workflow integration but doesn't follow the pure orchestration pattern. It has sensible defaults and works without a config file, making it more like a standalone helper tool that happens to share the `life` command namespace.
+
 ### State Management (`state.py` - Step 3)
 
 **Responsibility**: Track incremental sync state

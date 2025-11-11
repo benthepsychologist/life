@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Set
 logger = logging.getLogger(__name__)
 
 # Valid top-level keys in config
-VALID_TOP_LEVEL_KEYS = {"workspace", "sync", "merge", "process", "status"}
+VALID_TOP_LEVEL_KEYS = {"workspace", "sync", "merge", "process", "status", "today"}
 
 # Required fields per task type
 TASK_REQUIRED_FIELDS = {
