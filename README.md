@@ -275,6 +275,56 @@ process:
     output: ~/final/output.json
 ```
 
+### Conditional Execution
+
+Execute commands only when conditions are met:
+
+```yaml
+gen:
+  session_note:
+    commands:
+      - "fetch_data.sh > {data_file}"
+      - command: "process_data.sh {data_file}"
+        condition:
+          file_exists: "{data_file}"
+          file_not_empty: "{data_file}"
+    variables:
+      data_file: "/tmp/data.json"
+```
+
+**Supported conditions:**
+- `file_exists: path` - Check if file exists
+- `file_not_empty: path` - Check if file exists and has content
+- `json_has_field: {file: path, field: name}` - Check if JSON file contains a field
+
+Multiple conditions must all pass for the command to execute.
+
+### HITL (Human-in-the-Loop) Prompts
+
+Pause workflows for user confirmation with optional preview:
+
+```yaml
+sync:
+  import_data:
+    commands:
+      - "curl -o {temp_file} {api_url}"
+      - prompt:
+          message: "Import this data?"
+          preview_file: "{temp_file}"
+          preview_lines: 10
+          type: confirm
+      - command: "python import.py {temp_file}"
+    variables:
+      temp_file: "/tmp/data.json"
+      api_url: "https://api.example.com/data"
+```
+
+**Prompt options:**
+- `message` (required): Message to display to user
+- `preview_file` (optional): File to show preview of
+- `preview_lines` (optional): Number of lines to preview (default: 10)
+- `type` (optional): "confirm" or "input" (default: confirm)
+
 ### Variable Substitution
 
 Life-CLI supports these built-in variables:
@@ -393,11 +443,70 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed design philosophy.
 
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup.
 
+## Complete Example: Clinical Session Note Generation
+
+Here's a real-world example combining conditional execution and HITL prompts:
+
+```yaml
+# ~/.life/config.yml or ~/life.yml
+workspace: ~/life-cockpit
+
+gen:
+  session_note:
+    description: "Generate SOAP note from latest session transcript"
+    commands:
+      # 1. Look up client by email using dv tool
+      - command: "source ~/life-cockpit/activate.sh && dv find-contact --email {client_email} --json > {contact_file}"
+
+      # 2. Pull latest session data
+      - command: "source ~/life-cockpit/activate.sh && dv pull --client {client_email} --limit 1"
+
+      # 3. Preview transcript and ask for confirmation
+      - prompt:
+          message: "Generate SOAP note for this session?"
+          preview_file: "{transcript_file}"
+          preview_lines: 15
+          type: confirm
+
+      # 4. Generate SOAP note (only if transcript exists)
+      - command: |
+          source ~/life-cockpit/activate.sh && \
+          gen run {transcript_file} \
+            --system {system_prompt} \
+            --prompt {note_prompt} \
+            --out {output_file}
+        condition:
+          file_exists: "{transcript_file}"
+          file_not_empty: "{transcript_file}"
+
+    variables:
+      vault_dir: "~/vaults/clinic-vault"
+      contact_file: "/tmp/contact_{client_email}.json"
+      transcript_file: "{vault_dir}/clients/{client_email}/sessions/latest/transcript.md"
+      output_file: "{vault_dir}/clients/{client_email}/sessions/latest/soap_note.md"
+      system_prompt: "system_clinical"
+      note_prompt: "soap_note"
+```
+
+**Usage:**
+```bash
+life gen session_note --variables client_email=patient@example.com
+```
+
+This workflow:
+1. Looks up the client in Dataverse
+2. Pulls their latest session with transcript
+3. Shows a preview and asks for confirmation
+4. Generates a SOAP note only if the transcript exists
+5. All orchestrated through YAML - no Python code needed!
+
+See [examples/session-note-config.yml](examples/session-note-config.yml) for more examples.
+
 ## Use Cases
 
 Life-CLI was built for personal data management workflows:
 
-- **Clinical practice**: Sync patient sessions, calendar, emails → merge → generate reports
+- **Clinical practice**: Sync patient sessions, calendar, emails → merge → generate reports (see example above)
 - **Research**: Fetch datasets from multiple APIs → transform → analyze
 - **Personal analytics**: Aggregate data from various services → process → visualize
 - **Content workflows**: Fetch sources → transform → publish

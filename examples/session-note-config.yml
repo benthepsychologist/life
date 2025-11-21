@@ -1,0 +1,129 @@
+# Example Life-CLI configuration for clinical session note generation
+#
+# This demonstrates the new conditional execution and HITL prompt features
+# to create a fully YAML-configured workflow for generating SOAP notes.
+#
+# Usage:
+#   life gen session_note --variables client_email=patient@example.com
+
+workspace: ~/life-cockpit
+
+gen:
+  session_note:
+    description: "Generate SOAP note from latest session transcript"
+    commands:
+      # Step 1: Look up client by email
+      - command: "source ~/life-cockpit/activate.sh && dv find-contact --email {client_email} --json > {contact_file}"
+
+      # Step 2: Extract contact ID and pull latest session
+      # This gets the most recent fulfilled session with transcript
+      - command: |
+          source ~/life-cockpit/activate.sh && \
+          CONTACT_ID=$(jq -r .contactid {contact_file}) && \
+          dv pull --client {client_email} --limit 1 --force
+
+      # Step 3: Find the transcript file from the pulled session
+      # The dv pull command creates: ~/vaults/clinic-vault/clients/{normalized_email}/sessions/latest/
+      - command: |
+          NORMALIZED=$(echo {client_email} | sed 's/@/_at_/g' | sed 's/\./_/g') && \
+          TRANSCRIPT_DIR={vault_dir}/clients/$NORMALIZED/sessions && \
+          LATEST_SESSION=$(ls -t $TRANSCRIPT_DIR | head -1) && \
+          echo $TRANSCRIPT_DIR/$LATEST_SESSION/transcript.md > {transcript_path_file}
+
+      # Step 4: Show preview and ask for confirmation
+      - prompt:
+          message: "Generate SOAP note for this session?"
+          preview_file: "$(cat {transcript_path_file})"
+          preview_lines: 15
+          type: confirm
+
+      # Step 5: Generate SOAP note (only if transcript exists)
+      - command: |
+          source ~/life-cockpit/activate.sh && \
+          TRANSCRIPT=$(cat {transcript_path_file}) && \
+          OUTPUT_DIR=$(dirname $TRANSCRIPT) && \
+          gen run $TRANSCRIPT \
+            --system {system_prompt} \
+            --prompt {note_prompt} \
+            --out $OUTPUT_DIR/soap_note.md
+        condition:
+          file_exists: "$(cat {transcript_path_file})"
+          file_not_empty: "$(cat {transcript_path_file})"
+
+    variables:
+      vault_dir: "~/vaults/clinic-vault"
+      contact_file: "/tmp/life_contact_{client_email}.json"
+      transcript_path_file: "/tmp/life_transcript_path.txt"
+      system_prompt: "system_clinical"
+      note_prompt: "soap_note"
+
+
+  # Alternative: simpler workflow with direct paths
+  session_note_simple:
+    description: "Generate SOAP note with known session path"
+    commands:
+      # Step 1: Show transcript preview
+      - prompt:
+          message: "Generate SOAP note from this transcript?"
+          preview_file: "{transcript_file}"
+          preview_lines: 10
+          type: confirm
+
+      # Step 2: Generate note
+      - command: |
+          source ~/life-cockpit/activate.sh && \
+          gen run {transcript_file} \
+            --system {system_prompt} \
+            --prompt {note_prompt} \
+            --out {output_file}
+        condition:
+          file_exists: "{transcript_file}"
+
+    variables:
+      transcript_file: ""  # User must provide via --variables
+      output_file: ""      # User must provide via --variables
+      system_prompt: "system_clinical"
+      note_prompt: "soap_note"
+
+
+# Example process workflow with conditional execution
+process:
+  analyze_session:
+    description: "Analyze session data if available"
+    commands:
+      - command: "echo 'Processing session data...'"
+
+      # Only run analysis if transcript exists
+      - command: "python analyze.py {transcript_file}"
+        condition:
+          file_exists: "{transcript_file}"
+
+      # Always generate summary report
+      - command: "python summarize.py --output {summary_file}"
+
+    variables:
+      transcript_file: "~/data/transcript.md"
+      summary_file: "~/data/summary.md"
+
+
+# Example sync workflow with approval step
+sync:
+  pull_with_approval:
+    description: "Pull data with user confirmation"
+    commands:
+      # Step 1: Fetch data
+      - command: "curl -o {output} {api_url}"
+
+      # Step 2: Preview and confirm
+      - prompt:
+          message: "Import this data?"
+          preview_file: "{output}"
+          preview_lines: 20
+          type: confirm
+
+      # Step 3: Process if approved
+      - command: "python process_data.py {output}"
+
+    variables:
+      api_url: "https://api.example.com/data"
+      output: "/tmp/fetched_data.json"

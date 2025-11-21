@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Set
 logger = logging.getLogger(__name__)
 
 # Valid top-level keys in config
-VALID_TOP_LEVEL_KEYS = {"workspace", "sync", "merge", "process", "status", "today"}
+VALID_TOP_LEVEL_KEYS = {"workspace", "sync", "merge", "process", "status", "today", "gen"}
 
 # Required fields per task type
 TASK_REQUIRED_FIELDS = {
@@ -21,6 +21,7 @@ TASK_REQUIRED_FIELDS = {
     "merge": {"command"},
     "process": {"command"},
     "status": {"command"},
+    "gen": {"command"},
 }
 
 # Optional but recognized fields
@@ -36,7 +37,15 @@ TASK_OPTIONAL_FIELDS = {
     "variables",
     "append_template",
     "mode",
+    "condition",  # For conditional command execution
+    "prompt",     # For HITL prompts
 }
+
+# Valid condition types
+VALID_CONDITION_TYPES = {"file_exists", "file_not_empty", "json_has_field"}
+
+# Valid prompt fields
+VALID_PROMPT_FIELDS = {"message", "preview_file", "preview_lines", "type"}
 
 
 def validate_config(config: Dict[str, Any]) -> List[str]:
@@ -60,7 +69,7 @@ def validate_config(config: Dict[str, Any]) -> List[str]:
         )
 
     # Validate each task category
-    for category in ["sync", "merge", "process", "status"]:
+    for category in ["sync", "merge", "process", "status", "gen"]:
         if category not in config:
             continue
 
@@ -118,10 +127,17 @@ def _validate_task(task_path: str, task_config: Dict[str, Any], category: str) -
         issues.append(f"{task_path}: Cannot have both 'command' and 'commands' fields")
 
     # Validate commands is a list if present
-    if has_commands and not isinstance(task_config["commands"], list):
-        issues.append(
-            f"{task_path}: 'commands' must be a list, got {type(task_config['commands']).__name__}"
-        )
+    if has_commands:
+        if not isinstance(task_config["commands"], list):
+            issues.append(
+                f"{task_path}: 'commands' must be a list, got {type(task_config['commands']).__name__}"
+            )
+        else:
+            # Validate each command item in the list
+            for i, cmd_item in enumerate(task_config["commands"]):
+                if isinstance(cmd_item, dict):
+                    cmd_issues = _validate_command_item(f"{task_path}.commands[{i}]", cmd_item)
+                    issues.extend(cmd_issues)
 
     # Check for incremental sync configuration consistency
     incremental_field = task_config.get("incremental_field")
@@ -144,6 +160,84 @@ def _validate_task(task_path: str, task_config: Dict[str, Any], category: str) -
             f"{task_path}: Unrecognized fields: {', '.join(sorted(unknown_fields))}. "
             "These will be ignored unless added to 'variables' dictionary."
         )
+
+    return issues
+
+
+def _validate_command_item(item_path: str, cmd_item: Dict[str, Any]) -> List[str]:
+    """
+    Validate a command item in a commands list.
+
+    Command items can be:
+    - Dict with 'command' key and optional 'condition'
+    - Dict with 'prompt' key for HITL prompts
+
+    Args:
+        item_path: Path to command item (e.g. "gen.task.commands[0]")
+        cmd_item: Command item dictionary
+
+    Returns:
+        List of validation issues
+    """
+    issues = []
+
+    has_command = "command" in cmd_item
+    has_prompt = "prompt" in cmd_item
+
+    if not has_command and not has_prompt:
+        issues.append(f"{item_path}: Must have either 'command' or 'prompt' key")
+        return issues
+
+    if has_command and has_prompt:
+        issues.append(f"{item_path}: Cannot have both 'command' and 'prompt' keys")
+        return issues
+
+    # Validate prompt config
+    if has_prompt:
+        prompt_config = cmd_item["prompt"]
+        if not isinstance(prompt_config, dict):
+            issues.append(
+                f"{item_path}.prompt: Must be a dictionary, got {type(prompt_config).__name__}"
+            )
+        else:
+            # Check for required message field
+            if "message" not in prompt_config:
+                issues.append(f"{item_path}.prompt: Missing required field 'message'")
+
+            # Check for unknown fields in prompt
+            unknown_prompt_fields = set(prompt_config.keys()) - VALID_PROMPT_FIELDS
+            if unknown_prompt_fields:
+                issues.append(
+                    f"{item_path}.prompt: Unknown fields: {', '.join(sorted(unknown_prompt_fields))}"
+                )
+
+    # Validate condition if present
+    if "condition" in cmd_item:
+        condition = cmd_item["condition"]
+        if not isinstance(condition, dict):
+            issues.append(
+                f"{item_path}.condition: Must be a dictionary, got {type(condition).__name__}"
+            )
+        else:
+            # Check for valid condition types
+            unknown_conditions = set(condition.keys()) - VALID_CONDITION_TYPES
+            if unknown_conditions:
+                issues.append(
+                    f"{item_path}.condition: Unknown condition types: {', '.join(sorted(unknown_conditions))}. "
+                    f"Valid types: {', '.join(sorted(VALID_CONDITION_TYPES))}"
+                )
+
+            # Validate json_has_field structure
+            if "json_has_field" in condition:
+                json_cond = condition["json_has_field"]
+                if not isinstance(json_cond, dict):
+                    issues.append(
+                        f"{item_path}.condition.json_has_field: Must be a dictionary with 'file' and 'field' keys"
+                    )
+                elif "file" not in json_cond or "field" not in json_cond:
+                    issues.append(
+                        f"{item_path}.condition.json_has_field: Must have both 'file' and 'field' keys"
+                    )
 
     return issues
 

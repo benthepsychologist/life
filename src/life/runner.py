@@ -7,10 +7,13 @@ Copyright 2025 Ben Mensi
 Licensed under the Apache License, Version 2.0
 """
 
+import json
 import logging
 import subprocess
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Union
+
+import typer
 
 
 class CommandRunner:
@@ -136,27 +139,212 @@ class CommandRunner:
                 self.logger.error(f"STDERR:\n{e.stderr}")
             raise
 
+    def evaluate_condition(
+        self,
+        condition: Dict[str, Union[str, Dict]],
+        variables: Optional[Dict[str, str]] = None,
+    ) -> bool:
+        """
+        Evaluate a condition to determine if a command should run.
+
+        Supported conditions:
+        - file_exists: path - Check if file exists
+        - file_not_empty: path - Check if file exists and has content
+        - json_has_field: {file: path, field: name} - Check if JSON file has field
+
+        Args:
+            condition: Dict with condition type and parameters
+            variables: Dict of variables for substitution
+
+        Returns:
+            True if condition passes, False otherwise
+        """
+        if variables is None:
+            variables = {}
+
+        for cond_type, cond_value in condition.items():
+            if cond_type == "file_exists":
+                path_str = self.substitute_variables(str(cond_value), variables)
+                path = expand_path(path_str)
+                if not path.exists():
+                    self.logger.info(f"Condition failed: file does not exist: {path}")
+                    return False
+                self.logger.debug(f"Condition passed: file exists: {path}")
+
+            elif cond_type == "file_not_empty":
+                path_str = self.substitute_variables(str(cond_value), variables)
+                path = expand_path(path_str)
+                if not path.exists():
+                    self.logger.info(f"Condition failed: file does not exist: {path}")
+                    return False
+                if path.stat().st_size == 0:
+                    self.logger.info(f"Condition failed: file is empty: {path}")
+                    return False
+                self.logger.debug(f"Condition passed: file exists and not empty: {path}")
+
+            elif cond_type == "json_has_field":
+                if not isinstance(cond_value, dict):
+                    self.logger.error(f"json_has_field requires dict with 'file' and 'field' keys")
+                    return False
+
+                file_path_str = self.substitute_variables(str(cond_value.get("file", "")), variables)
+                field_name = cond_value.get("field", "")
+
+                path = expand_path(file_path_str)
+                if not path.exists():
+                    self.logger.info(f"Condition failed: JSON file does not exist: {path}")
+                    return False
+
+                try:
+                    with open(path, 'r') as f:
+                        data = json.load(f)
+                    if field_name not in data:
+                        self.logger.info(f"Condition failed: field '{field_name}' not in JSON: {path}")
+                        return False
+                    self.logger.debug(f"Condition passed: field '{field_name}' exists in {path}")
+                except (json.JSONDecodeError, IOError) as e:
+                    self.logger.error(f"Condition failed: error reading JSON {path}: {e}")
+                    return False
+
+            else:
+                self.logger.warning(f"Unknown condition type: {cond_type}")
+                return False
+
+        return True
+
+    def run_prompt(
+        self,
+        prompt_config: Dict,
+        variables: Optional[Dict[str, str]] = None,
+    ) -> bool:
+        """
+        Display a prompt to the user and wait for confirmation.
+
+        Prompt config keys:
+        - message: Message to display (required)
+        - preview_file: File to preview (optional)
+        - preview_lines: Number of lines to show (default: 10)
+        - type: "confirm" or "input" (default: confirm)
+
+        Args:
+            prompt_config: Dict with prompt configuration
+            variables: Dict of variables for substitution
+
+        Returns:
+            True if user confirms, False otherwise
+            (For input type, stores result in variables)
+        """
+        if variables is None:
+            variables = {}
+
+        message = prompt_config.get("message", "Continue?")
+        message = self.substitute_variables(message, variables)
+
+        prompt_type = prompt_config.get("type", "confirm")
+        preview_file = prompt_config.get("preview_file")
+        preview_lines = prompt_config.get("preview_lines", 10)
+
+        if self.dry_run:
+            self.logger.info(f"[DRY RUN] Would prompt user: {message}")
+            if preview_file:
+                preview_path = self.substitute_variables(str(preview_file), variables)
+                self.logger.info(f"[DRY RUN] Would preview file: {preview_path}")
+            return True
+
+        # Show preview if specified
+        if preview_file:
+            preview_path_str = self.substitute_variables(str(preview_file), variables)
+            preview_path = expand_path(preview_path_str)
+
+            if preview_path.exists():
+                typer.echo("\n" + "─" * 60)
+                try:
+                    content = preview_path.read_text()
+                    lines = content.split('\n')
+                    typer.echo(f"Preview: {preview_path.name}\n")
+                    for line in lines[:preview_lines]:
+                        typer.echo(line)
+                    if len(lines) > preview_lines:
+                        typer.echo(f"\n... ({len(lines) - preview_lines} more lines)")
+                except Exception as e:
+                    typer.echo(f"Error reading preview file: {e}")
+                typer.echo("─" * 60 + "\n")
+            else:
+                typer.echo(f"⚠️  Preview file not found: {preview_path}")
+
+        # Prompt user
+        if prompt_type == "confirm":
+            result = typer.confirm(message)
+            if not result:
+                self.logger.info("User declined prompt")
+            return result
+        elif prompt_type == "input":
+            result = typer.prompt(message)
+            # Could store result in variables if needed
+            self.logger.info(f"User input: {result}")
+            return True
+        else:
+            self.logger.warning(f"Unknown prompt type: {prompt_type}, defaulting to confirm")
+            return typer.confirm(message)
+
     def run_multiple(
         self,
-        commands: list[str],
+        commands: List[Union[str, Dict]],
         variables: Optional[Dict[str, str]] = None,
-    ) -> list[Optional[subprocess.CompletedProcess]]:
+    ) -> List[Optional[subprocess.CompletedProcess]]:
         """
         Execute multiple commands in sequence.
 
+        Commands can be:
+        - String: Simple shell command
+        - Dict with 'command' key: Shell command with optional 'condition'
+        - Dict with 'prompt' key: User prompt with confirmation
+
         Args:
-            commands: List of commands to execute
+            commands: List of commands to execute (strings or dicts)
             variables: Dict of variables to substitute in all commands
 
         Returns:
-            List of CompletedProcess results (or None for dry_run)
+            List of CompletedProcess results (or None for dry_run/skipped)
 
         Raises:
             subprocess.CalledProcessError: If any command fails
+            typer.Abort: If user cancels at a prompt
         """
         results = []
-        for i, command in enumerate(commands, 1):
-            self.logger.info(f"Command {i}/{len(commands)}")
+        for i, command_item in enumerate(commands, 1):
+            self.logger.info(f"Step {i}/{len(commands)}")
+
+            # Handle dict-based commands (with conditions or prompts)
+            if isinstance(command_item, dict):
+                # Check if this is a prompt command
+                if "prompt" in command_item:
+                    prompt_config = command_item["prompt"]
+                    if not self.run_prompt(prompt_config, variables):
+                        self.logger.info("Workflow cancelled by user")
+                        raise typer.Abort()
+                    results.append(None)  # Prompts don't return subprocess results
+                    continue
+
+                # Check if this is a conditional command
+                if "condition" in command_item:
+                    condition = command_item["condition"]
+                    if not self.evaluate_condition(condition, variables):
+                        self.logger.info(f"Skipping command {i} (condition not met)")
+                        results.append(None)
+                        continue
+
+                # Extract the actual command string
+                command = command_item.get("command")
+                if not command:
+                    self.logger.error(f"Command {i} has no 'command' key")
+                    continue
+
+            else:
+                # Simple string command
+                command = command_item
+
+            # Execute the command
             result = self.run(command, variables)
             results.append(result)
 
