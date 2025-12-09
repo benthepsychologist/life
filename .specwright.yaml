@@ -7,5 +7,5 @@ repo:
 user:
   default_owner: null
 current:
-  spec: .specwright/specs/job-runner-spec.md
-  aip: /workspace/life-cli/.specwright/aips/job-runner-spec.yaml
+  spec: .specwright/specs/regular-assessment-schedule.md
+  aip: /workspace/life-cli/.specwright/aips/projection-writeback.yaml

@@ -51,6 +51,9 @@ Issues = "https://github.com/benthepsychologist/life-cli/issues"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+life = ["jobs/*.yaml"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py38"

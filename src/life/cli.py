@@ -33,8 +33,7 @@ app.add_typer(config.app, name="config")
 app.add_typer(run.app, name="run")
 app.add_typer(jobs.app, name="jobs")
 
-# Global state for context
-state = {"config": {}, "dry_run": False, "verbose": False}
+# Note: state is created fresh in main_callback, not at module level
 
 
 def setup_logging(verbose: bool = False):
@@ -73,6 +72,15 @@ def main_callback(
 
     Manages sync, merge, process, and status tasks defined in a YAML config file.
     """
+    # Create fresh state for each invocation (not module-level to avoid pollution)
+    # Note: older typer versions (< 0.10) may pass booleans as strings
+    if isinstance(dry_run, str):
+        dry_run = dry_run.lower() not in ("false", "0", "no", "")
+    if isinstance(verbose, str):
+        verbose = verbose.lower() not in ("false", "0", "no", "")
+
+    state = {"config": {}, "dry_run": dry_run, "verbose": verbose}
+
     # Setup logging
     setup_logging(verbose)
 
@@ -85,8 +93,6 @@ def main_callback(
         try:
             config = load_config(config_path)
             state["config"] = config
-            state["dry_run"] = dry_run
-            state["verbose"] = verbose
 
             if verbose:
                 logging.debug(f"Loaded config from: {config_path or 'default location'}")
@@ -99,19 +105,12 @@ def main_callback(
                     logging.debug(
                         f"No config file found, using defaults for '{ctx.invoked_subcommand}' command"
                     )
-                state["config"] = {}
-                state["dry_run"] = dry_run
-                state["verbose"] = verbose
             else:
                 typer.echo(f"Error: {e}", err=True)
                 raise typer.Exit(1)
         except yaml.YAMLError as e:
             typer.echo(f"Error: {e}", err=True)
             raise typer.Exit(1)
-    elif ctx.invoked_subcommand == "init":
-        # Init command needs dry_run and verbose flags but no config
-        state["dry_run"] = dry_run
-        state["verbose"] = verbose
 
     # Store state in context for subcommands
     ctx.obj = state
