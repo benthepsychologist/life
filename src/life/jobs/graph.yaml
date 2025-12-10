@@ -1,8 +1,7 @@
 # Microsoft Graph job definitions
-# Copy to ~/.life/jobs/graph.yaml
 
 jobs:
-  fetch_recent_mail:
+  graph.fetch_recent_mail:
     description: "Fetch recent emails"
     steps:
       - name: fetch
@@ -13,7 +12,7 @@ jobs:
           select: [id, subject, from, receivedDateTime]
           output: ~/data/emails.json
 
-  fetch_unread_mail:
+  graph.fetch_unread_mail:
     description: "Fetch unread emails"
     steps:
       - name: fetch
@@ -24,7 +23,7 @@ jobs:
           filter: "isRead eq false"
           output: ~/data/unread_emails.json
 
-  send_test_email:
+  graph.send_test_email:
     description: "Send a test email"
     steps:
       - name: send
@@ -35,7 +34,7 @@ jobs:
           subject: "Test from life-cli"
           body: "This is a test email sent via life run."
 
-  whoami:
+  graph.whoami:
     description: "Get current user profile"
     steps:
       - name: me
@@ -43,7 +42,7 @@ jobs:
         args:
           account: personal
 
-  fetch_calendar:
+  graph.fetch_calendar:
     description: "Fetch upcoming calendar events"
     steps:
       - name: fetch
@@ -54,7 +53,7 @@ jobs:
           select: [subject, start, end, location]
           output: ~/data/calendar.json
 
-  list_onedrive:
+  graph.list_onedrive:
     description: "List OneDrive root files"
     steps:
       - name: list

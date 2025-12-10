@@ -1,8 +1,7 @@
 # Dataverse job definitions
-# Copy to ~/.life/jobs/dataverse.yaml
 
 jobs:
-  query_contacts:
+  dataverse.query_contacts:
     description: "Query active contacts from Dataverse"
     steps:
       - name: query
@@ -16,7 +15,7 @@ jobs:
           top: 100
           output: ~/data/contacts.json
 
-  query_accounts:
+  dataverse.query_accounts:
     description: "Query accounts from Dataverse"
     steps:
       - name: query
@@ -28,7 +27,7 @@ jobs:
           filter: "statecode eq 0"
           output: ~/data/accounts.json
 
-  get_contact:
+  dataverse.get_contact:
     description: "Fetch a single contact by ID"
     steps:
       - name: fetch

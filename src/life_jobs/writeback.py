@@ -23,6 +23,13 @@ Copyright 2025 Ben Mensi
 Licensed under the Apache License, Version 2.0
 """
 
+# I/O declaration for static analysis and auditing
+__io__ = {
+    "reads": ["vault_root/**/*.md", "plan_path"],
+    "writes": ["plan_path"],
+    "external": ["dataverse.patch"],
+}
+
 import json
 import os
 from datetime import datetime, timezone

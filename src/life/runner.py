@@ -184,7 +184,7 @@ class CommandRunner:
 
             elif cond_type == "json_has_field":
                 if not isinstance(cond_value, dict):
-                    self.logger.error(f"json_has_field requires dict with 'file' and 'field' keys")
+                    self.logger.error("json_has_field requires dict with 'file' and 'field' keys")
                     return False
 
                 file_path_str = self.substitute_variables(str(cond_value.get("file", "")), variables)

@@ -21,9 +21,11 @@ import yaml
 
 from life.event_client import EventClient
 
-
 # Allowlist for call: resolution (Rule 3)
 ALLOWED_CALL_PREFIXES = ("life_jobs.",)
+
+# Job name must be dotted namespace: <domain>.<action>
+JOB_NAME_PATTERN = re.compile(r"^\w+\.\w+$")
 
 
 class JobLoadError(Exception):
@@ -47,6 +49,24 @@ class UnsubstitutedVariableError(ValueError):
     """Raised when {var} placeholders remain after substitution."""
 
     pass
+
+
+class InvalidJobNameError(ValueError):
+    """Raised when job name doesn't match dotted namespace convention."""
+
+    pass
+
+
+def validate_job_name(job_id: str) -> None:
+    """Validate job name matches dotted namespace convention.
+
+    Jobs must use format: <domain>.<action> (e.g., email.send, today.create_note)
+    """
+    if not JOB_NAME_PATTERN.match(job_id):
+        raise InvalidJobNameError(
+            f"Invalid job name '{job_id}'. "
+            f"Jobs must use dotted namespace: <domain>.<action> (e.g., email.send)"
+        )
 
 
 def resolve_callable(call_path: str) -> Callable:
@@ -91,8 +111,10 @@ def load_jobs(jobs_dir: Path) -> Dict[str, Dict]:
 def get_job(job_id: str, jobs_dir: Path) -> Dict:
     """Get a single job definition by ID.
 
+    Raises InvalidJobNameError if name doesn't match dotted namespace.
     Raises KeyError if job not found.
     """
+    validate_job_name(job_id)
     jobs = load_jobs(jobs_dir)
     if job_id not in jobs:
         raise KeyError(f"Job not found: {job_id}. Available: {list(jobs.keys())}")
@@ -121,6 +143,9 @@ def run_job(
     Returns stable shape (Rule 6): {"run_id": str, "status": str, "steps": list}
     No print statements (Rule 2) - CLI handles verbose output.
     """
+    # Validate job name format
+    validate_job_name(job_id)
+
     # Generate run ID
     run_id = (
         f"{job_id}-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-"

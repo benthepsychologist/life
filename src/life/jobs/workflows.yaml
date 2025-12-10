@@ -1,8 +1,7 @@
 # Multi-step workflow job definitions
-# Copy to ~/.life/jobs/workflows.yaml
 
 jobs:
-  daily_data_pull:
+  workflow.daily_data_pull:
     description: "Pull daily data from multiple sources"
     steps:
       - name: contacts
@@ -26,12 +25,3 @@ jobs:
           account: personal
           top: 10
           output: ~/data/calendar.json
-
-  backup_scripts:
-    description: "Run backup script (example shell step)"
-    steps:
-      - name: backup
-        call: life_jobs.shell.run
-        args:
-          command: "tar -czf ~/backups/scripts-$(date +%Y%m%d).tar.gz ~/scripts"
-          timeout: 60

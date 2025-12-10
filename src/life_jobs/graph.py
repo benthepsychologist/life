@@ -10,6 +10,13 @@ Copyright 2025 Ben Mensi
 Licensed under the Apache License, Version 2.0
 """
 
+# I/O declaration for static analysis and auditing
+__io__ = {
+    "reads": ["body_file"],
+    "writes": ["output"],
+    "external": ["msgraph.get", "msgraph.post"],
+}
+
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional

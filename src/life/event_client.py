@@ -14,7 +14,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-
 # Fixed set of allowed event types (Rule 7)
 ALLOWED_EVENT_TYPES = frozenset({
     "job.started",

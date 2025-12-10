@@ -8,4 +8,4 @@ user:
   default_owner: null
 current:
   spec: .specwright/specs/life-jobs-verbs-refactor.md
-  aip: /workspace/life-cli/.specwright/aips/llm-processing-ho.yaml
+  aip: /workspace/life-cli/.specwright/aips/life-jobs-verbs-refactor.yaml

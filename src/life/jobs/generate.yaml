@@ -1,9 +1,7 @@
 # LLM generate job definitions
-# Requires: pip install 'life-cli[llm]'
-# Copy to ~/.life/jobs/generate.yaml
 
 jobs:
-  simple_prompt:
+  generate.prompt:
     description: "Simple LLM prompt"
     steps:
       - name: generate
@@ -13,7 +11,7 @@ jobs:
           model: gpt-4o-mini
           output: ~/output/response.md
 
-  summarize_json:
+  generate.summarize:
     description: "Summarize JSON data with context"
     steps:
       - name: generate
@@ -24,7 +22,7 @@ jobs:
           system: "You are a helpful assistant that provides concise summaries."
           output: ~/output/summary.md
 
-  batch_process:
+  generate.batch:
     description: "Process a batch of items through LLM"
     steps:
       - name: batch
@@ -37,7 +35,7 @@ jobs:
           max_retries: 3
           rate_limit_rpm: 60
 
-  llm_healthcheck:
+  generate.healthcheck:
     description: "Verify llm library is available and configured"
     steps:
       - name: ping

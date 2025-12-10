@@ -7,7 +7,6 @@ Copyright 2025 Ben Mensi
 Licensed under the Apache License, Version 2.0
 """
 
-import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -18,6 +17,7 @@ from rich.table import Table
 
 from life.job_runner import (
     CallNotAllowedError,
+    InvalidJobNameError,
     JobLoadError,
     UnsubstitutedVariableError,
     run_job,
@@ -35,7 +35,7 @@ def _format_result(result: Dict[str, Any]) -> None:
         count = result.get("count", len(records))
 
         if not records:
-            console.print(f"[dim]No records found[/dim]")
+            console.print("[dim]No records found[/dim]")
             return
 
         # Preferred display columns (in order) - common useful fields
@@ -125,11 +125,12 @@ def _format_result(result: Dict[str, Any]) -> None:
                 console.print(f"  [bold]{key}:[/bold] {value}")
 
 
-def _get_jobs_dir(config: dict) -> Path:
-    """Get jobs directory from config or default."""
-    jobs_config = config.get("jobs", {})
-    jobs_dir = jobs_config.get("dir", "~/.life/jobs")
-    return Path(jobs_dir).expanduser()
+def _get_jobs_dir() -> Path:
+    """Get jobs directory from package location.
+
+    Jobs are always read from src/life/jobs/ (no user overrides).
+    """
+    return Path(__file__).parent.parent / "jobs"
 
 
 def _get_event_log(config: dict) -> Path:
@@ -172,7 +173,7 @@ def run_command(
     dry_run = ctx.obj.get("dry_run", False) if ctx.obj else False
     verbose = ctx.obj.get("verbose", False) if ctx.obj else False
 
-    jobs_dir = _get_jobs_dir(config)
+    jobs_dir = _get_jobs_dir()
     event_log = _get_event_log(config)
 
     # Parse variables from --var options
@@ -185,10 +186,10 @@ def run_command(
             key, value = v.split("=", 1)
             variables[key] = value
 
-    # Check jobs directory exists
+    # Check jobs directory exists (should always exist in package)
     if not jobs_dir.exists():
         typer.echo(f"Error: Jobs directory not found: {jobs_dir}", err=True)
-        typer.echo("Create it with: mkdir -p ~/.life/jobs", err=True)
+        typer.echo("This is a package installation issue.", err=True)
         raise typer.Exit(1)
 
     # Run the job
@@ -211,7 +212,12 @@ def run_command(
         typer.echo("")
 
         for i, step in enumerate(result["steps"], 1):
-            status_icon = "✓" if step["status"] == "success" else "○" if step.get("dry_run") else "✗"
+            if step["status"] == "success":
+                status_icon = "✓"
+            elif step.get("dry_run"):
+                status_icon = "○"
+            else:
+                status_icon = "✗"
             typer.echo(f"  {status_icon} Step {i}: {step['step']}")
             if verbose:
                 typer.echo(f"    call: {step['call']}")
@@ -236,6 +242,10 @@ def run_command(
         raise typer.Exit(1)
 
     except CallNotAllowedError as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+    except InvalidJobNameError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
 

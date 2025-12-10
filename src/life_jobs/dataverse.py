@@ -10,6 +10,13 @@ Copyright 2025 Ben Mensi
 Licensed under the Apache License, Version 2.0
 """
 
+# I/O declaration for static analysis and auditing
+__io__ = {
+    "reads": [],
+    "writes": ["output"],
+    "external": ["dataverse.query", "dataverse.post", "dataverse.patch", "dataverse.delete"],
+}
+
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional

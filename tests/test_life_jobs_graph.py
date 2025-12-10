@@ -4,9 +4,6 @@ Copyright 2025 Ben Mensi
 Licensed under the Apache License, Version 2.0
 """
 
-import json
-import pytest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from life_jobs import graph

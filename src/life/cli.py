@@ -12,7 +12,7 @@ import typer
 import yaml
 
 from life import __version__
-from life.commands import config, init, jobs, merge, process, run, status, sync, today
+from life.commands import config, email, jobs, run, today
 from life.config import load_config
 
 # Initialize main app
@@ -23,12 +23,8 @@ app = typer.Typer(
 )
 
 # Add subcommands
-app.add_typer(init.app, name="init")
-app.add_typer(sync.app, name="sync")
-app.add_typer(merge.app, name="merge")
-app.add_typer(process.app, name="process")
-app.add_typer(status.app, name="status")
 app.add_typer(today.app, name="today")
+app.add_typer(email.app, name="email")
 app.add_typer(config.app, name="config")
 app.add_typer(run.app, name="run")
 app.add_typer(jobs.app, name="jobs")
@@ -85,10 +81,10 @@ def main_callback(
     setup_logging(verbose)
 
     # Load config if a subcommand is being invoked
-    # Some commands don't need config or create it (init, today)
-    # Job runner commands (run, jobs) can work with defaults if no config
-    commands_without_config = ["version", "init"]
-    commands_with_optional_config = ["today", "run", "jobs"]
+    # Some commands don't need config (version)
+    # Job runner commands (run, jobs, today) can work with defaults if no config
+    commands_without_config = ["version"]
+    commands_with_optional_config = ["today", "email", "run", "jobs"]
     if ctx.invoked_subcommand and ctx.invoked_subcommand not in commands_without_config:
         try:
             config = load_config(config_path)
@@ -102,9 +98,8 @@ def main_callback(
             # Some commands can work without config (use defaults)
             if ctx.invoked_subcommand in commands_with_optional_config:
                 if verbose:
-                    logging.debug(
-                        f"No config file found, using defaults for '{ctx.invoked_subcommand}' command"
-                    )
+                    cmd = ctx.invoked_subcommand
+                    logging.debug(f"No config file found, using defaults for '{cmd}' command")
             else:
                 typer.echo(f"Error: {e}", err=True)
                 raise typer.Exit(1)

@@ -5,11 +5,12 @@ Licensed under the Apache License, Version 2.0
 """
 
 import json
+
 import pytest
-from pathlib import Path
 
 from life.job_runner import (
     CallNotAllowedError,
+    InvalidJobNameError,
     JobLoadError,
     UnsubstitutedVariableError,
     _check_unsubstituted,
@@ -19,6 +20,7 @@ from life.job_runner import (
     load_jobs,
     resolve_callable,
     run_job,
+    validate_job_name,
 )
 
 
@@ -218,6 +220,28 @@ jobs:
         assert result[1] == {"job_id": "job_b", "description": "Second job"}
 
 
+class TestValidateJobName:
+    """Tests for validate_job_name function."""
+
+    def test_valid_dotted_names(self):
+        """Should accept valid dotted namespace names."""
+        validate_job_name("email.send")
+        validate_job_name("today.create_note")
+        validate_job_name("dataverse.query")
+
+    def test_invalid_undotted_names(self):
+        """Should reject names without dots."""
+        with pytest.raises(InvalidJobNameError):
+            validate_job_name("send_email")
+        with pytest.raises(InvalidJobNameError):
+            validate_job_name("greet")
+
+    def test_invalid_multi_dot_names(self):
+        """Should reject names with more than one dot."""
+        with pytest.raises(InvalidJobNameError):
+            validate_job_name("email.send.batch")
+
+
 class TestGetJob:
     """Tests for get_job function."""
 
@@ -226,24 +250,29 @@ class TestGetJob:
         (tmp_path / "test.yaml").write_text(
             """
 jobs:
-  my_job:
+  test.job:
     description: "My job"
     steps:
       - name: step1
-        call: life_jobs.shell.run
+        call: life_jobs.dataverse.query
         args:
-          command: "echo test"
+          entity: "contacts"
 """
         )
-        job = get_job("my_job", tmp_path)
+        job = get_job("test.job", tmp_path)
         assert job["description"] == "My job"
         assert len(job["steps"]) == 1
 
     def test_get_nonexistent_job(self, tmp_path):
         """Should raise KeyError for nonexistent job."""
         with pytest.raises(KeyError) as exc_info:
-            get_job("nonexistent", tmp_path)
-        assert "nonexistent" in str(exc_info.value)
+            get_job("test.nonexistent", tmp_path)
+        assert "test.nonexistent" in str(exc_info.value)
+
+    def test_get_job_invalid_name(self, tmp_path):
+        """Should raise InvalidJobNameError for invalid job names."""
+        with pytest.raises(InvalidJobNameError):
+            get_job("invalid_name", tmp_path)
 
 
 class TestRunJob:
@@ -256,19 +285,19 @@ class TestRunJob:
         (jobs_dir / "test.yaml").write_text(
             """
 jobs:
-  test_job:
+  test.job:
     description: "Test job"
     steps:
       - name: step1
-        call: life_jobs.shell.run
+        call: life_jobs.dataverse.query
         args:
-          command: "echo hello"
+          entity: "contacts"
 """
         )
         event_log = tmp_path / "events.jsonl"
 
         result = run_job(
-            "test_job",
+            "test.job",
             dry_run=True,
             jobs_dir=jobs_dir,
             event_log=event_log,
@@ -279,7 +308,7 @@ jobs:
         assert len(result["steps"]) == 1
         assert result["steps"][0]["status"] == "skipped"
         assert result["steps"][0]["dry_run"] is True
-        assert result["steps"][0]["call"] == "life_jobs.shell.run"
+        assert result["steps"][0]["call"] == "life_jobs.dataverse.query"
 
     def test_run_job_logs_events(self, tmp_path):
         """Should log events to JSONL file."""
@@ -288,19 +317,19 @@ jobs:
         (jobs_dir / "test.yaml").write_text(
             """
 jobs:
-  test_job:
+  test.job:
     description: "Test job"
     steps:
       - name: step1
-        call: life_jobs.shell.run
+        call: life_jobs.dataverse.query
         args:
-          command: "echo hello"
+          entity: "contacts"
 """
         )
         event_log = tmp_path / "events.jsonl"
 
         run_job(
-            "test_job",
+            "test.job",
             dry_run=True,
             jobs_dir=jobs_dir,
             event_log=event_log,
@@ -321,7 +350,21 @@ jobs:
 
         with pytest.raises(KeyError):
             run_job(
-                "nonexistent",
+                "test.nonexistent",
+                dry_run=True,
+                jobs_dir=jobs_dir,
+                event_log=event_log,
+            )
+
+    def test_run_job_invalid_name_raises(self, tmp_path):
+        """Should raise InvalidJobNameError for invalid job names."""
+        jobs_dir = tmp_path / "jobs"
+        jobs_dir.mkdir()
+        event_log = tmp_path / "events.jsonl"
+
+        with pytest.raises(InvalidJobNameError):
+            run_job(
+                "invalid_name",
                 dry_run=True,
                 jobs_dir=jobs_dir,
                 event_log=event_log,
@@ -334,26 +377,26 @@ jobs:
         (jobs_dir / "test.yaml").write_text(
             """
 jobs:
-  greet:
+  test.greet:
     description: "Greet someone"
     steps:
       - name: greet
-        call: life_jobs.shell.run
+        call: life_jobs.dataverse.query
         args:
-          command: "echo Hello {name}!"
+          entity: "{entity_name}"
 """
         )
         event_log = tmp_path / "events.jsonl"
 
         result = run_job(
-            "greet",
+            "test.greet",
             dry_run=True,
             jobs_dir=jobs_dir,
             event_log=event_log,
-            variables={"name": "World"},
+            variables={"entity_name": "contacts"},
         )
 
-        assert result["steps"][0]["args"]["command"] == "echo Hello World!"
+        assert result["steps"][0]["args"]["entity"] == "contacts"
 
     def test_run_job_unsubstituted_variable_error(self, tmp_path):
         """Should raise error for unsubstituted variables."""
@@ -362,20 +405,20 @@ jobs:
         (jobs_dir / "test.yaml").write_text(
             """
 jobs:
-  needs_var:
+  test.needs_var:
     description: "Needs a variable"
     steps:
       - name: step1
-        call: life_jobs.shell.run
+        call: life_jobs.dataverse.query
         args:
-          command: "echo {missing_var}"
+          entity: "{missing_var}"
 """
         )
         event_log = tmp_path / "events.jsonl"
 
         with pytest.raises(UnsubstitutedVariableError) as exc_info:
             run_job(
-                "needs_var",
+                "test.needs_var",
                 dry_run=True,
                 jobs_dir=jobs_dir,
                 event_log=event_log,

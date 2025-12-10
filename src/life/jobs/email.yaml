@@ -1,0 +1,32 @@
+jobs:
+  email.send:
+    description: "Send a single email"
+    steps:
+      - name: send
+        call: life_jobs.email.send
+        args:
+          account: "{account}"
+          to: ["{to}"]
+          subject: "{subject}"
+          body: "{body}"
+
+  email.send_templated:
+    description: "Send templated email to one recipient"
+    steps:
+      - name: send
+        call: life_jobs.email.send_templated
+        args:
+          account: "{account}"
+          to: "{to}"
+          template: "{template}"
+
+  email.batch_send:
+    description: "Send templated emails to list"
+    steps:
+      - name: batch
+        call: life_jobs.email.batch_send
+        args:
+          account: "{account}"
+          template: "{template}"
+          recipients_file: "{recipients_file}"
+          dry_run: "{dry_run}"

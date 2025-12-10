@@ -8,21 +8,21 @@ Licensed under the Apache License, Version 2.0
 """
 
 from pathlib import Path
-from typing import Optional
 
 import typer
 import yaml
 
-from life.job_runner import JobLoadError, get_job, list_jobs, load_jobs
+from life.job_runner import InvalidJobNameError, JobLoadError, get_job, list_jobs
 
 app = typer.Typer(help="List and inspect job definitions")
 
 
-def _get_jobs_dir(config: dict) -> Path:
-    """Get jobs directory from config or default."""
-    jobs_config = config.get("jobs", {})
-    jobs_dir = jobs_config.get("dir", "~/.life/jobs")
-    return Path(jobs_dir).expanduser()
+def _get_jobs_dir() -> Path:
+    """Get jobs directory from package location.
+
+    Jobs are always read from src/life/jobs/ (no user overrides).
+    """
+    return Path(__file__).parent.parent / "jobs"
 
 
 @app.command("list")
@@ -42,12 +42,11 @@ def list_command(
         life jobs list
         life jobs list --errors
     """
-    config = ctx.obj.get("config", {})
-    jobs_dir = _get_jobs_dir(config)
+    jobs_dir = _get_jobs_dir()
 
     if not jobs_dir.exists():
         typer.echo(f"Jobs directory not found: {jobs_dir}", err=True)
-        typer.echo("Create it with: mkdir -p ~/.life/jobs", err=True)
+        typer.echo("This is a package installation issue.", err=True)
         raise typer.Exit(1)
 
     try:
@@ -91,8 +90,7 @@ def show_command(
         life jobs show sync_contacts
         life jobs show session_summary
     """
-    config = ctx.obj.get("config", {})
-    jobs_dir = _get_jobs_dir(config)
+    jobs_dir = _get_jobs_dir()
 
     if not jobs_dir.exists():
         typer.echo(f"Jobs directory not found: {jobs_dir}", err=True)
@@ -104,6 +102,9 @@ def show_command(
         typer.echo("Error loading job files:", err=True)
         for path, err in e.errors:
             typer.echo(f"  - {path.name}: {err}", err=True)
+        raise typer.Exit(1)
+    except InvalidJobNameError as e:
+        typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
     except KeyError as e:
         typer.echo(f"Error: {e}", err=True)

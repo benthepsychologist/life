@@ -10,6 +10,13 @@ Copyright 2025 Ben Mensi
 Licensed under the Apache License, Version 2.0
 """
 
+# I/O declaration for static analysis and auditing
+__io__ = {
+    "reads": ["prompt", "context_files", "items_file"],
+    "writes": ["output"],
+    "external": ["llm.prompt"],
+}
+
 import json
 import re
 import time
