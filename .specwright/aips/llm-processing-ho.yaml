@@ -1,0 +1,166 @@
+aip_id: AIP-life-cli-2025-12-10-001
+context:
+  background: ''
+  constraints: []
+created: '2025-12-10T12:02:12.108833+00:00'
+meta:
+  created_at: '2025-12-10T12:02:12.108833+00:00'
+  created_by: benthepsychologist
+objective:
+  acceptance_criteria:
+  - '`llm` added as optional dependency in pyproject.toml (`[project.optional-dependencies] llm = ["llm>=0.19"]`)'
+  - 'New `life_jobs/generate.py` module with functions: `prompt()`, `prompt_with_context()`, `batch()`'
+  - 'Functions follow existing patterns: no print, return `{"output": str, "model": str, ...}` dicts'
+  - Template resolution supports both inline text and file paths (expanduser)
+  - Context assembly mirrors tools/generate pattern (JSON files -> markdown blocks)
+  - 'Graceful degradation: clear error if `llm` not installed'
+  - '`batch()` includes production safeguards:'
+  - Unit tests with mocked LLM responses (no actual API calls in CI)
+  - Live acceptance tests gated by `LLM_LIVE_TESTS=1` env var
+  - Example job definition in `src/life/jobs/generate.yaml`
+  - Health-check job `llm_healthcheck` in job definitions
+  - CI green (lint + unit tests pass)
+  goal: Add native LLM prompt processing as a life_jobs module using the llm Python library
+orchestrator_contract:
+  artifacts_dir: .aip_artifacts/AIP-life-cli-2025-12-10-001
+  logging: jsonl
+  state_machine:
+    events:
+    - run_step
+    - await_gate
+    - approve
+    - reject
+    - retry
+    - escalate
+    - complete
+    states:
+    - pending
+    - running
+    - awaiting_human
+    - failed
+    - succeeded
+    - rolled_back
+plan:
+- description: Planning & Design
+  gate_ref: 'G0: Plan Approval'
+  kind: code
+  outputs:
+  - artifacts/plan/generate-api-design.md
+  prompt: 'Design the `life_jobs.generate` module API. Produce:
+
+    1. Function signatures for `prompt()`, `prompt_with_context()`, `batch()`
+
+    2. Return shape specifications (must be JSON-serializable dicts)
+
+    3. Error handling strategy (ImportError for missing llm, model errors)
+
+    4. Template/context resolution approach
+
+    Document in `artifacts/plan/generate-api-design.md`.'
+  role: coding_agent
+  step_id: step-001
+- description: Implementation
+  gate_ref: 'G1: Code Readiness'
+  kind: code
+  outputs:
+  - src/life_jobs/generate.py
+  - src/life_jobs/__init__.py
+  - pyproject.toml
+  prompt: 'Implement `src/life_jobs/generate.py` with:
+
+    1. **Import guard**: Wrap `import llm` in try/except, raise clear error on use if missing
+
+    2. **`prompt()`**: Basic single prompt with optional system prompt, model selection, output file
+
+    3. **`prompt_with_context()`**: Accepts list of JSON/text files, assembles as markdown context blocks
+    (mirroring tools/generate pattern)
+
+    4. **`batch()`**: Process JSON array of items, optional accumulation mode
+
+    5. **Helper functions**: `_assemble_context()`, `_resolve_template()`, `_expand_path()`
+
+    Follow existing module patterns from `life_jobs/dataverse.py`:
+
+    - No print statements
+
+    - Return simple dicts with predictable keys
+
+    - Use Path.expanduser() for path handling
+
+    - Type hints on all functions
+
+    Update `src/life_jobs/__init__.py` docstring to include generate module.
+
+    Update `pyproject.toml` to add optional `llm` dependency.'
+  role: coding_agent
+  step_id: step-002
+- description: Job Definitions
+  gate_ref: 'G1: Code Readiness'
+  kind: code
+  outputs:
+  - src/life/jobs/generate.yaml
+  prompt: "Create example job definitions in `src/life/jobs/generate.yaml`:\n```yaml\njobs:\n  simple_prompt:\n\
+    \    description: \"Simple LLM prompt\"\n    steps:\n      - name: generate\n        call: life_jobs.generate.prompt\n\
+    \        args:\n          prompt: \"{user_prompt}\"\n          model: gpt-4o-mini\n          output:\
+    \ ~/output/response.md\n  summarize_json:\n    description: \"Summarize JSON data with context\"\n\
+    \    steps:\n      - name: generate\n        call: life_jobs.generate.prompt_with_context\n      \
+    \  args:\n          prompt: \"Summarize the key points from this data.\"\n          context_files:\
+    \ [\"{input_file}\"]\n          system: \"You are a helpful assistant that provides concise summaries.\"\
+    \n          output: ~/output/summary.md\n```"
+  role: coding_agent
+  step_id: step-003
+- description: Unit and Integration Testing
+  gate_ref: 'G2: Pre-Release'
+  kind: code
+  outputs:
+  - tests/test_generate.py
+  - tests/test_generate_live.py
+  prompt: "Write unit tests in `tests/test_generate.py`:\n**Unit tests (mocked, no API calls):**\n1. Test\
+    \ `prompt()` with mocked llm model (patch `llm.get_model`)\n2. Test `prompt_with_context()` context\
+    \ assembly\n3. Test `batch()` with array processing and accumulation\n4. Test ImportError handling\
+    \ when llm not installed\n5. Test path expansion and file writing\n6. Test error propagation from\
+    \ model calls\n7. **Production safeguard tests:**\n   - Test retry with backoff (mock transient failures\
+    \ then success)\n   - Test rate limiting with fake clock (inject time_func/sleep_func, assert sleep\
+    \ durations)\n   - Test `continue_on_error=True` captures per-item failures\n   - Test `continue_on_error=False`\
+    \ fails fast and returns partial results\n   - Test `accumulate=True` defaults to `continue_on_error=False`\n\
+    \   - Test `accumulate=True` with explicit `continue_on_error=True` honors override\n   - Test call_id\
+    \ uniqueness (UUIDv4 format, unique across batch items)\n   - Test token aggregation shape `{\"input\"\
+    : int, \"output\": int, \"total\": int}`\n   - Test tokens are `None` when model doesn't provide them\n\
+    \   - Test results array ordering matches filtered input\n**Integration test (mocked model, real file\
+    \ I/O):**\n8. Create temp JSON items file with 3-5 items\n9. Use fake llm model returning predictable\
+    \ text and token counts\n10. Run `batch()` with rate limiting and retries disabled\n11. Assert: count/succeeded/failed\
+    \ correct, each result has call_id/status/tokens/model\n12. Assert: output file contains valid JSON\
+    \ array\nUse pytest fixtures and monkeypatch for mocking. Rate limiting tests MUST use injectable\
+    \ clock, not wall-clock sleeps.\nWrite live acceptance tests in `tests/test_generate_live.py` that\
+    \ make real LLM calls.\nThese run only when `LLM_LIVE_TESTS=1` environment variable is set.\n```python\n\
+    import pytest\nimport os\npytestmark = pytest.mark.skipif(\n    os.environ.get(\"LLM_LIVE_TESTS\"\
+    ) != \"1\",\n    reason=\"Live LLM tests disabled (set LLM_LIVE_TESTS=1 to run)\"\n)\n```\nTests:\n\
+    1. `test_live_prompt()` - single prompt returns non-empty text\n2. `test_live_prompt_with_context()`\
+    \ - context assembly works end-to-end\n3. `test_live_batch_small()` - 2-3 item batch completes with\
+    \ correct structure\n4. `test_live_healthcheck()` - run the llm_healthcheck job definition\nThese\
+    \ tests verify real API connectivity and model availability."
+  role: coding_agent
+  step_id: step-004
+- description: Documentation & Cleanup
+  gate_ref: 'G4: Post-Implementation'
+  kind: code
+  outputs:
+  - README.md
+  - artifacts/governance/decision-log.md
+  prompt: "1. Update README.md with brief section on LLM integration (under Features or new section)\n\
+    2. Add inline docstrings to all public functions in generate.py\n3. Create decision log documenting:\n\
+    \   - Why llm library vs CLI wrapper\n   - Why optional dependency\n   - Template resolution approach\
+    \ chosen"
+  role: coding_agent
+  step_id: step-005
+project_slug: life-cli
+repo:
+  default_branch: main
+  url: git@github.com:benthepsychologist/life-cli.git
+  working_branch: feat/llm-processing
+spec_version: 1.0.0
+tier: C
+title: LLM Processing Integration
+updated: '2025-12-10T12:02:12.108833+00:00'
+version: '0.1'
+

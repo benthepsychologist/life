@@ -339,12 +339,89 @@ life run my_job --var recipient=user@example.com --var date=2025-01-01
 - `get_calendar_events` - Fetch calendar events
 - `get_files` - List OneDrive files
 
+**LLM Generate (`life_jobs.generate`):** *(requires `pip install 'life-cli[llm]'`)*
+- `prompt` - Execute single LLM prompt with optional system prompt
+- `prompt_with_context` - Execute prompt with JSON/text files as context
+- `batch` - Process JSON array through LLM with retry, rate limiting, and error handling
+
 **Shell (`life_jobs.shell`):**
 - `run` - Execute shell command (transitional, prefer Python functions)
 
 ### Event Logging
 
 All job executions are logged to `~/.life/events.jsonl` with correlation IDs for debugging.
+
+## LLM Integration
+
+Life-CLI supports native LLM processing via the `llm` library (by Simon Willison). This allows jobs to call LLM models directly without subprocess overhead.
+
+### Installation
+
+```bash
+# Install with LLM support
+pip install 'life-cli[llm]'
+```
+
+### Example Job Definitions
+
+```yaml
+# ~/.life/jobs/generate.yaml
+jobs:
+  simple_prompt:
+    description: "Simple LLM prompt"
+    steps:
+      - name: generate
+        call: life_jobs.generate.prompt
+        args:
+          prompt: "{user_prompt}"
+          model: gpt-4o-mini
+          output: ~/output/response.md
+
+  summarize_json:
+    description: "Summarize JSON data with context"
+    steps:
+      - name: generate
+        call: life_jobs.generate.prompt_with_context
+        args:
+          prompt: "Summarize the key points from this data."
+          context_files: ["{input_file}"]
+          system: "You are a helpful assistant."
+          output: ~/output/summary.md
+
+  batch_process:
+    description: "Process items through LLM"
+    steps:
+      - name: batch
+        call: life_jobs.generate.batch
+        args:
+          items_file: "{items}"
+          prompt: "Analyze this item."
+          output: ~/output/results.json
+          rate_limit_rpm: 60
+          max_retries: 3
+```
+
+### Usage
+
+```bash
+# Simple prompt
+life run simple_prompt --var user_prompt="Explain quantum computing"
+
+# Summarize a JSON file
+life run summarize_json --var input_file=~/data/report.json
+
+# Batch process items
+life run batch_process --var items=~/data/items.json
+```
+
+### Production Safeguards
+
+The `batch()` function includes:
+- **Retry with backoff**: Automatic retry on transient failures (rate limits, timeouts)
+- **Rate limiting**: Configurable requests-per-minute limit
+- **Error handling**: Continue on failure or fail-fast mode
+- **Token tracking**: Aggregated token usage across batch
+- **Unique call_id**: UUIDv4 per invocation for debugging
 
 ### Configuration
 
