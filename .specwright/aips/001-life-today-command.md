@@ -18,7 +18,7 @@ repo:
 
 ### Background
 
-The legacy `life today` command from `~/tools/life/` provided valuable daily note management capabilities but was not integrated with the new life-cli orchestration system. This command helps maintain daily operational notes with templating support and LLM-based reflection capabilities.
+The legacy `life today` command from `~/tools/life/` provided valuable daily note management capabilities but was not integrated with the new life orchestration system. This command helps maintain daily operational notes with templating support and LLM-based reflection capabilities.
 
 Daily notes follow a structured format (Focus, Status Snapshot, Tasks, Reflection) and are stored in markdown format. The LLM integration allows users to ask questions about their notes and automatically appends Q&A sections for future reference.
 
@@ -49,7 +49,7 @@ Daily notes follow a structured format (Focus, Status Snapshot, Tasks, Reflectio
 ### Constraints
 
 - No edits to protected paths (`src/life/state.py`, `src/life/config.py` core logic)
-- Must work with existing life-cli configuration system
+- Must work with existing life configuration system
 - Must follow established patterns (Typer subcommands, context passing)
 - Should be tool-agnostic (calls external `llm` CLI, doesn't implement LLM logic)
 - No breaking changes to existing commands
@@ -312,7 +312,7 @@ If issues are discovered after merge:
 
 ## Notes
 
-- This command is conceptually different from life-cli's core mission (data pipeline orchestration)
+- This command is conceptually different from life's core mission (data pipeline orchestration)
 - It's a helper/utility command for personal productivity
-- Future consideration: Could be moved to separate package if life-cli scope creep becomes an issue
+- Future consideration: Could be moved to separate package if life scope creep becomes an issue
 - LLM integration is optional (graceful degradation if `llm` CLI not installed)

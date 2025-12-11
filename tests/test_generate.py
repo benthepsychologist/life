@@ -34,7 +34,7 @@ class TestImportGuard:
                 with pytest.raises(ImportError) as exc_info:
                     generate._require_llm()
 
-                assert "life-cli[llm]" in str(exc_info.value)
+                assert "life[llm]" in str(exc_info.value)
             finally:
                 generate._LLM_AVAILABLE = original_available
 

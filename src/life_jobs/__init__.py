@@ -1,5 +1,5 @@
 """
-life_jobs - Step functions for the life-cli job runner.
+life_jobs - Step functions for the life job runner.
 
 This package contains modules that can be called from job definitions:
 - dataverse: Dataverse operations via morch

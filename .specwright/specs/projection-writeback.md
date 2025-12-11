@@ -5,7 +5,7 @@ title: projection writeback
 owner: benthepsychologist
 goal: Implement projection writeback
 labels: []
-project_slug: life-cli
+project_slug: life
 spec_version: 1.0.0
 created: 2025-12-09T16:05:53.242692+00:00
 updated: 2025-12-09T16:05:53.242692+00:00
@@ -124,9 +124,9 @@ This makes adding new entities (e.g., `crf_client`) straightforward.
 
 1. `/workspace/lorchestra/lorchestra/processors/projection.py` - Add `projected_at` column to `SyncSqliteProcessor`, inject `_projected_at` for frontmatter in `FileProjectionProcessor`
 2. `/workspace/lorchestra/tests/test_projection_processor.py` - Add tests for `projected_at` column and frontmatter injection
-3. `/workspace/life-cli/src/life_jobs/writeback.py` - New file with `plan_writeback()` and `apply_writeback()`
-4. `/workspace/life-cli/tests/test_writeback.py` - New file with tests for writeback functions
-5. `/workspace/life-cli/examples/jobs/writeback.yaml` - Job definitions for writeback
+3. `/workspace/life/src/life_jobs/writeback.py` - New file with `plan_writeback()` and `apply_writeback()`
+4. `/workspace/life/tests/test_writeback.py` - New file with tests for writeback functions
+5. `/workspace/life/examples/jobs/writeback.yaml` - Job definitions for writeback
 
 ---
 
@@ -240,7 +240,7 @@ for row in rows:
 
 ---
 
-### Step 2: Implement `life_jobs.writeback` (in `/workspace/life-cli`)
+### Step 2: Implement `life_jobs.writeback` (in `/workspace/life`)
 
 #### `plan_writeback()`
 
@@ -487,7 +487,7 @@ jobs:
 
 ---
 
-### Step 4: Write unit tests for lorchestra and life-cli
+### Step 4: Write unit tests for lorchestra and life
 
 **For lorchestra (`test_projection_processor.py`):**
 - `test_sync_sqlite_adds_projected_at_column` - verify column exists after sync
@@ -496,7 +496,7 @@ jobs:
 - `test_sync_sqlite_handles_empty_results` - no crash when BQ returns 0 rows
 - `test_file_projection_injects_projected_at` - `_projected_at` variable available for frontmatter
 
-**For life-cli (`test_writeback.py`):**
+**For life (`test_writeback.py`):**
 - `test_plan_writeback_detects_changed_files` - mtime > projected_at + epsilon
 - `test_plan_writeback_skips_unchanged_files` - mtime <= projected_at + epsilon
 - `test_plan_writeback_skips_no_frontmatter` - files without frontmatter are skipped
@@ -516,7 +516,7 @@ jobs:
 
 ```bash
 cd /workspace/lorchestra && pytest tests/test_projection_processor.py -v
-cd /workspace/life-cli && pytest tests/test_writeback.py -v
+cd /workspace/life && pytest tests/test_writeback.py -v
 ruff check .
 ```
 

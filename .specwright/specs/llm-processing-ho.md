@@ -5,7 +5,7 @@ title: LLM Processing Integration
 owner: benthepsychologist
 goal: Add native LLM prompt processing as a life_jobs module using the llm Python library
 labels: [feature, integration, llm]
-project_slug: life-cli
+project_slug: life
 spec_version: 1.0.0
 created: 2025-12-10T12:02:12.108833+00:00
 updated: 2025-12-10T12:02:12.108833+00:00
@@ -18,7 +18,7 @@ repo:
 
 ## Objective
 
-> Integrate LLM prompt processing into life-cli's job runner using Simon Willison's `llm` library as a first-class Python dependency, enabling YAML-defined jobs to call LLM models directly without subprocess overhead.
+> Integrate LLM prompt processing into life's job runner using Simon Willison's `llm` library as a first-class Python dependency, enabling YAML-defined jobs to call LLM models directly without subprocess overhead.
 
 ### Background
 
@@ -30,7 +30,7 @@ The `/workspace/tools/generate` package demonstrates a working pattern for LLM-b
 However, this approach has limitations:
 1. **Subprocess overhead**: Each LLM call spawns a new process
 2. **No library integration**: `llm` is a full Python library, not just a CLI
-3. **Separate tooling**: Generate lives outside life-cli, requiring shell orchestration
+3. **Separate tooling**: Generate lives outside life, requiring shell orchestration
 4. **Limited composability**: Can't easily chain LLM calls with Dataverse/Graph operations in a single job
 
 The `llm` library (https://llm.datasette.io/) provides a clean Python API:
@@ -66,8 +66,8 @@ This spec integrates `llm` as a library dependency, creating `life_jobs.generate
 ### Constraints
 
 - No edits under protected paths (`src/core/**`, `infra/**`)
-- `llm` must be optional dependency (life-cli works without it, just can't run generate jobs)
-- No templates bundled in life-cli - templates are user-provided or referenced by path
+- `llm` must be optional dependency (life works without it, just can't run generate jobs)
+- No templates bundled in life - templates are user-provided or referenced by path
 - Follows existing `life_jobs.*` module patterns exactly
 
 ### Not In Scope
@@ -380,7 +380,7 @@ except ImportError:
 def _require_llm():
     if not _LLM_AVAILABLE:
         raise ImportError(
-            "llm library not installed. Install with: pip install 'life-cli[llm]'"
+            "llm library not installed. Install with: pip install 'life[llm]'"
         )
 ```
 
@@ -495,7 +495,7 @@ This enables:
 ### Operational Notes
 
 **Packaging vs Runtime**:
-- `llm` is an **optional PyPI dependency** - `pip install life-cli` works without it
+- `llm` is an **optional PyPI dependency** - `pip install life` works without it
 - `llm` is **operationally required** in production environments running generate jobs
 - Enforce at deployment/bootstrap, not inside job functions
 - CI must test both paths: with and without llm installed

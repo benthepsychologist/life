@@ -115,7 +115,7 @@ def main_callback(
 @app.command()
 def version():
     """Show version information."""
-    typer.echo(f"life-cli version {__version__}")
+    typer.echo(f"life version {__version__}")
 
 
 def main():

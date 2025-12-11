@@ -35,8 +35,8 @@ Life-CLI is a tool for orchestrating personal data workflows without the overhea
 
 ```bash
 # Clone the repository
-git clone https://github.com/benthepsychologist/life-cli.git
-cd life-cli
+git clone https://github.com/benthepsychologist/life.git
+cd life
 
 # Create virtual environment and install
 uv venv
@@ -47,8 +47,8 @@ uv pip install -e .
 ### Using pip
 
 ```bash
-git clone https://github.com/benthepsychologist/life-cli.git
-cd life-cli
+git clone https://github.com/benthepsychologist/life.git
+cd life
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .
@@ -58,7 +58,7 @@ pip install -e .
 
 ```bash
 life --version
-# Output: life-cli version 0.1.0
+# Output: life version 0.1.0
 ```
 
 ### Shell Completion (Optional)
@@ -339,7 +339,7 @@ life run my_job --var recipient=user@example.com --var date=2025-01-01
 - `get_calendar_events` - Fetch calendar events
 - `get_files` - List OneDrive files
 
-**LLM Generate (`life_jobs.generate`):** *(requires `pip install 'life-cli[llm]'`)*
+**LLM Generate (`life_jobs.generate`):** *(requires `pip install 'life[llm]'`)*
 - `prompt` - Execute single LLM prompt with optional system prompt
 - `prompt_with_context` - Execute prompt with JSON/text files as context
 - `batch` - Process JSON array through LLM with retry, rate limiting, and error handling
@@ -359,7 +359,7 @@ Life-CLI supports native LLM processing via the `llm` library (by Simon Willison
 
 ```bash
 # Install with LLM support
-pip install 'life-cli[llm]'
+pip install 'life[llm]'
 ```
 
 ### Example Job Definitions
@@ -589,11 +589,11 @@ pip install llm
 - ⏳ Step 4: Multi-command & workflow support
 - ⏳ Step 5: Documentation & examples
 
-See [.specwright/specs/life-cli-initial-spec.md](.specwright/specs/life-cli-initial-spec.md) for the full implementation plan.
+See [.specwright/specs/life-initial-spec.md](.specwright/specs/life-initial-spec.md) for the full implementation plan.
 
 ### Current Working Environment
 
-While life-cli's orchestration layer is being completed, a full set of production-ready CLI tools is available in a temporary monorepo setup at `~/tools/`. This allows immediate productivity without waiting for final architecture decisions.
+While life's orchestration layer is being completed, a full set of production-ready CLI tools is available in a temporary monorepo setup at `~/tools/`. This allows immediate productivity without waiting for final architecture decisions.
 
 **Available Tools (15+ CLIs):**
 - `msg` - Gmail client for email operations (configured with OAuth)
@@ -603,7 +603,7 @@ While life-cli's orchestration layer is being completed, a full set of productio
 
 **Working Directory Setup:**
 
-Work from `~/life-cockpit/` (not from the life-cli repo):
+Work from `~/life-cockpit/` (not from the life repo):
 ```bash
 # Activate environment to add all tools to PATH
 source ~/life-cockpit/activate.sh
@@ -630,14 +630,14 @@ The session summary automation is fully operational:
 5. Includes Drive folder link in email
 6. Cleans up temporary files
 
-This temporary setup will be refactored once life-cli's orchestration capabilities mature and the data pipeline architecture is finalized.
+This temporary setup will be refactored once life's orchestration capabilities mature and the data pipeline architecture is finalized.
 
 ## Architecture
 
 Life-CLI follows the Unix philosophy: do one thing well. It orchestrates CLI tools, it doesn't replace them.
 
 ```
-life-cli:     Orchestration layer (workflows, state, sequencing)
+life:     Orchestration layer (workflows, state, sequencing)
 │
 ├─ dv:        Your Dataverse CLI
 ├─ msg:       Your email CLI
@@ -720,7 +720,7 @@ Life-CLI was built for personal data management workflows:
 - **Personal analytics**: Aggregate data from various services → process → visualize
 - **Content workflows**: Fetch sources → transform → publish
 
-If you're orchestrating 5-10 specialized CLI tools in a personal workflow, life-cli is for you.
+If you're orchestrating 5-10 specialized CLI tools in a personal workflow, life is for you.
 
 ## License
 

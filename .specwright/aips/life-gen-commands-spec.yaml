@@ -1,4 +1,4 @@
-aip_id: AIP-life-cli-2025-12-09-001
+aip_id: AIP-life-2025-12-09-001
 context:
   background: '> Describe the current state and why this work is needed now.'
   constraints:
@@ -14,7 +14,7 @@ objective:
   - 70% test coverage achieved
   goal: Implement life gen commands spec
 orchestrator_contract:
-  artifacts_dir: .aip_artifacts/AIP-life-cli-2025-12-09-001
+  artifacts_dir: .aip_artifacts/AIP-life-2025-12-09-001
   logging: jsonl
   state_machine:
     events:
@@ -77,10 +77,10 @@ plan:
   prompt: Minimal documentation (decision log only).
   role: coding_agent
   step_id: step-005
-project_slug: life-cli
+project_slug: life
 repo:
   default_branch: main
-  url: git@github.com:benthepsychologist/life-cli.git
+  url: git@github.com:benthepsychologist/life.git
   working_branch: feat/life-gen-commands-spec
 spec_version: 1.0.0
 tier: C

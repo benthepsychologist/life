@@ -6,7 +6,7 @@
 ## TL;DR Current State
 
 - **Life-CLI Status:** Phase 1 complete (124 tests passing) - core orchestration layer functional
-- **Working Directory:** `~/life-cockpit/` (NOT from life-cli repo)
+- **Working Directory:** `~/life-cockpit/` (NOT from life repo)
 - **Tools Location:** `~/tools/` (temporary monorepo with 15+ CLI tools)
 - **PHI Data:** `~/phi-data/` (client registries, sensitive data)
 - **Production Status:** Session summary automation fully operational
@@ -30,9 +30,9 @@ dv --help
 ### 2. Key File Locations
 
 **Life-CLI Package (Orchestration Layer):**
-- Repo: `/home/user/life-cli/`
+- Repo: `/home/user/life/`
 - Status: Phase 1 complete, don't modify unless working on orchestration features
-- Tests: `pytest` in life-cli directory (124 passing)
+- Tests: `pytest` in life directory (124 passing)
 
 **Tools Monorepo (Business Logic):**
 - Location: `/home/user/tools/`
@@ -176,7 +176,7 @@ gws client-folder client@example.com --json
 - **Code/Tools:** `~/tools/` (git, sharable, no PHI)
 - **Protected Data:** `~/phi-data/` (never in git, client info)
 - **Working Directory:** `~/life-cockpit/` (config, scripts)
-- **Life-CLI Repo:** `/home/user/life-cli/` (orchestration only, no business logic)
+- **Life-CLI Repo:** `/home/user/life/` (orchestration only, no business logic)
 
 ## Important Notes for Future Claude Sessions
 
@@ -190,9 +190,9 @@ gws client-folder client@example.com --json
 - ✅ Update this document when making significant changes
 
 ### DON'T:
-- ❌ Put PHI in `~/tools/` or `~/life-cli/`
-- ❌ Work from life-cli repo directory (use `~/life-cockpit/`)
-- ❌ Add business logic to life-cli package (orchestration only)
+- ❌ Put PHI in `~/tools/` or `~/life/`
+- ❌ Work from life repo directory (use `~/life-cockpit/`)
+- ❌ Add business logic to life package (orchestration only)
 - ❌ Commit PHI to git
 - ❌ Modify OAuth configs without backing up first
 - ❌ Use Python 3.12+ f-strings with backslashes (syntax error)
@@ -213,7 +213,7 @@ f"text {temp}"  # ✅ Works
 
 ### Life-CLI Tests
 ```bash
-cd ~/life-cli
+cd ~/life
 pytest  # 124 tests passing
 ```
 

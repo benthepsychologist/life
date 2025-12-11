@@ -14,8 +14,8 @@ Thank you for your interest in contributing to Life-CLI!
 
 ```bash
 # Clone the repository
-git clone https://github.com/benthepsychologist/life-cli.git
-cd life-cli
+git clone https://github.com/benthepsychologist/life.git
+cd life
 
 # Create virtual environment
 uv venv
@@ -43,7 +43,7 @@ Changes to the source code will be reflected immediately (editable install).
 ## Project Structure
 
 ```
-life-cli/
+life/
 ├── src/
 │   └── life/
 │       ├── __init__.py          # Package init, version info
@@ -157,7 +157,7 @@ Life-CLI is being built following a 5-step Agentic Implementation Plan (AIP):
 - **Step 4 ⏳**: Multi-command & workflow support
 - **Step 5 ⏳**: Documentation & examples
 
-See [.specwright/specs/life-cli-initial-spec.md](.specwright/specs/life-cli-initial-spec.md) for details.
+See [.specwright/specs/life-initial-spec.md](.specwright/specs/life-initial-spec.md) for details.
 
 When contributing, check which step you're working on and follow the spec's guidance.
 

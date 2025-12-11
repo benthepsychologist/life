@@ -1,4 +1,4 @@
-aip_id: AIP-life-cli-2025-12-10-001
+aip_id: AIP-life-2025-12-10-001
 context:
   background: ''
   constraints: []
@@ -20,9 +20,9 @@ objective:
   - All processor modules have `__io__` metadata dict
   - ARCHITECTURE.md updated to match this spec exactly
   - CI green (lint + tests)
-  goal: Clean up life-cli architecture to match the jobs/verbs/processors model
+  goal: Clean up life architecture to match the jobs/verbs/processors model
 orchestrator_contract:
-  artifacts_dir: .aip_artifacts/AIP-life-cli-2025-12-10-001
+  artifacts_dir: .aip_artifacts/AIP-life-2025-12-10-001
   logging: jsonl
   state_machine:
     events:
@@ -69,10 +69,10 @@ plan:
   kind: code
   role: coding_agent
   step_id: step-007
-project_slug: life-cli
+project_slug: life
 repo:
   default_branch: main
-  url: git@github.com:benthepsychologist/life-cli.git
+  url: git@github.com:benthepsychologist/life.git
   working_branch: feat/jobs-verbs-refactor
 spec_version: 1.0.0
 tier: B

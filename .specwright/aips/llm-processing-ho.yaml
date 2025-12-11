@@ -1,4 +1,4 @@
-aip_id: AIP-life-cli-2025-12-10-001
+aip_id: AIP-life-2025-12-10-llm
 context:
   background: ''
   constraints: []
@@ -22,7 +22,7 @@ objective:
   - CI green (lint + unit tests pass)
   goal: Add native LLM prompt processing as a life_jobs module using the llm Python library
 orchestrator_contract:
-  artifacts_dir: .aip_artifacts/AIP-life-cli-2025-12-10-001
+  artifacts_dir: .aip_artifacts/AIP-life-2025-12-10-llm
   logging: jsonl
   state_machine:
     events:
@@ -153,10 +153,10 @@ plan:
     \ chosen"
   role: coding_agent
   step_id: step-005
-project_slug: life-cli
+project_slug: life
 repo:
   default_branch: main
-  url: git@github.com:benthepsychologist/life-cli.git
+  url: git@github.com:benthepsychologist/life.git
   working_branch: feat/llm-processing
 spec_version: 1.0.0
 tier: C

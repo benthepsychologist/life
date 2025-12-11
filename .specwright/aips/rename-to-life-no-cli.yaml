@@ -1,0 +1,152 @@
+aip_id: AIP-life-2025-12-11-rename
+title: Rename project from life-cli to life
+tier: C
+version: "0.1"
+spec_version: 1.0.0
+project_slug: life
+created: "2025-12-11T21:13:21+00:00"
+updated: "2025-12-11T21:13:21+00:00"
+
+meta:
+  created_at: "2025-12-11T21:13:21+00:00"
+  created_by: claude-code
+
+repo:
+  url: git@github.com:benthepsychologist/life-cli.git
+  default_branch: main
+  working_branch: feat/rename-to-life-no-cli
+
+objective:
+  goal: Remove '-cli' suffix from project name across all references
+  acceptance_criteria:
+    - "`pyproject.toml` updated with new package name and URLs"
+    - "All code references updated (version string, error messages, docstrings)"
+    - "All documentation updated (README, CONTRIBUTING, ARCHITECTURE, QUICK_REFERENCE)"
+    - "All spec/AIP files updated with new project_slug and URLs"
+    - "CI green (lint + unit)"
+    - "GitHub repository renamed from `life-cli` to `life` (do last)"
+    - "Git remote updated to point to new repository (do last)"
+
+context:
+  background: |
+    The project is currently named `life-cli` but the `-cli` suffix is redundant since:
+    1. The command is already just `life` (not `life-cli`)
+    2. The project is clearly a CLI tool without needing it in the name
+    3. Shorter name is cleaner for package installation (`pip install life` vs `pip install life-cli`)
+  constraints:
+    - Update all internal references first, then rename repo/remote last
+    - The repo rename will break the local git session until the remote is updated
+
+orchestrator_contract:
+  artifacts_dir: .aip_artifacts/AIP-life-2025-12-11-rename
+  logging: jsonl
+  state_machine:
+    states: [pending, running, awaiting_human, failed, succeeded]
+    events: [run_step, complete, retry]
+
+plan:
+  - step_id: step-001
+    description: Update core source files
+    kind: code
+    role: coding_agent
+    prompt: |
+      Update source files to replace `life-cli` with `life`:
+
+      1. `src/life/cli.py:118`: Change `life-cli version` → `life version`
+      2. `src/life_jobs/__init__.py:2`: Change docstring `life-cli` → `life`
+      3. `src/life_jobs/generate.py:41`: Change `life-cli[llm]` → `life[llm]`
+
+      Note: pyproject.toml already updated.
+    outputs:
+      - src/life/cli.py
+      - src/life_jobs/__init__.py
+      - src/life_jobs/generate.py
+
+  - step_id: step-002
+    description: Update test expectations
+    kind: code
+    role: coding_agent
+    prompt: |
+      Update `tests/test_generate.py:37` to expect `life[llm]` instead of `life-cli[llm]` in the error message assertion.
+    outputs:
+      - tests/test_generate.py
+
+  - step_id: step-003
+    description: Update documentation files
+    kind: code
+    role: coding_agent
+    prompt: |
+      Replace all `life-cli` references with `life` in documentation:
+
+      - `README.md` (~20 occurrences)
+      - `CONTRIBUTING.md` (4 occurrences)
+      - `docs/ARCHITECTURE.md` (2 occurrences)
+      - `docs/QUICK_REFERENCE.md` (8 occurrences)
+      - `examples/life.yml` (1 occurrence)
+    outputs:
+      - README.md
+      - CONTRIBUTING.md
+      - docs/ARCHITECTURE.md
+      - docs/QUICK_REFERENCE.md
+      - examples/life.yml
+
+  - step_id: step-004
+    description: Update spec and AIP files
+    kind: code
+    role: coding_agent
+    prompt: |
+      Update all spec and AIP files:
+
+      1. Change `project_slug: life-cli` → `project_slug: life`
+      2. Change `aip_id` prefixes from `AIP-life-cli-*` → `AIP-life-*`
+      3. Change `repo.url` from `life-cli.git` → `life.git`
+      4. Replace all prose references to `life-cli` with `life`
+
+      Files to update:
+      - 12 spec files in `.specwright/specs/`
+      - 8 AIP files in `.specwright/aips/`
+      - `.specwright/aips/001-life-today-command.md`
+    outputs:
+      - .specwright/specs/*.md
+      - .specwright/aips/*.yaml
+      - .specwright/aips/001-life-today-command.md
+
+  - step_id: step-005
+    description: Run CI checks
+    kind: validation
+    role: coding_agent
+    prompt: |
+      Run linting and tests to verify all changes are correct:
+      ```bash
+      ruff check .
+      pytest -q
+      ```
+    commands:
+      - ruff check .
+      - pytest -q
+
+  - step_id: step-006
+    description: Rename GitHub repository (manual)
+    kind: manual
+    role: human
+    prompt: |
+      MANUAL STEP: Rename the GitHub repository via GitHub settings.
+
+      Go to: https://github.com/benthepsychologist/life-cli/settings
+      Change repository name from `life-cli` to `life`
+
+      WARNING: This will break the local git remote until step-007 is completed.
+
+      Confirm when complete.
+
+  - step_id: step-007
+    description: Update git remote
+    kind: code
+    role: coding_agent
+    prompt: |
+      Update the local git remote to point to the new repository URL:
+      ```bash
+      git remote set-url origin git@github.com:benthepsychologist/life.git
+      ```
+    commands:
+      - git remote set-url origin git@github.com:benthepsychologist/life.git

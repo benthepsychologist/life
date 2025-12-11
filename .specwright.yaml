@@ -7,5 +7,5 @@ repo:
 user:
   default_owner: null
 current:
-  spec: .specwright/specs/cockpit-scripts-to-verbs.md
-  aip: .specwright/aips/cockpit-scripts-to-verbs.yaml
+  spec: .specwright/specs/rename-to-life-no-cli.md
+  aip: .specwright/aips/rename-to-life-no-cli.yaml

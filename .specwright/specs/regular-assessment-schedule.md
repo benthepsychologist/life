@@ -5,7 +5,7 @@ title: Regular Assessment Schedule
 owner: benthepsychologist
 goal: Implement Regular Assessment Schedule
 labels: []
-project_slug: life-cli
+project_slug: life
 spec_version: 1.0.0
 created: 2025-12-09T19:25:33.304265+00:00
 updated: 2025-12-09T19:25:33.304265+00:00

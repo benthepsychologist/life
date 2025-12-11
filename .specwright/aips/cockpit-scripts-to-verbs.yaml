@@ -1,4 +1,4 @@
-aip_id: AIP-life-cli-2025-12-11-pipeline-verbs
+aip_id: AIP-life-2025-12-11-pipeline-verbs
 title: Add life pipeline Verbs (lorchestra-first)
 spec_ref: .specwright/specs/cockpit-scripts-to-verbs.md
 tier: C
@@ -18,14 +18,14 @@ objective:
     - "`life --verbose pipeline ingest` displays lorchestra stdout/stderr in real-time"
     - "`--full-refresh` clears `{vault_path}/views/*` only"
     - "After `project` command, print vault statistics"
-    - "No job lists in life-cli code"
-    - "No batching logic in life-cli code"
+    - "No job lists in life code"
+    - "No batching logic in life code"
     - "Each verb makes exactly ONE lorchestra call"
 
 context:
   constraints:
-    - "life-cli must NOT know internal lorchestra job IDs (only composite job names)"
-    - "life-cli must NOT implement batching or DAG logic"
+    - "life must NOT know internal lorchestra job IDs (only composite job names)"
+    - "life must NOT implement batching or DAG logic"
     - "Subprocess adapter for lorchestra is acceptable (until Python API exists)"
   prerequisites:
     - "Lorchestra must have composite jobs defined (pipeline.ingest, pipeline.canonize, etc.)"

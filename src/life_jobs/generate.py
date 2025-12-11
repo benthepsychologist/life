@@ -38,7 +38,7 @@ def _require_llm() -> None:
     """Raise clear error if llm library not installed."""
     if not _LLM_AVAILABLE:
         raise ImportError(
-            "llm library not installed. Install with: pip install 'life-cli[llm]'"
+            "llm library not installed. Install with: pip install 'life[llm]'"
         )
 
 

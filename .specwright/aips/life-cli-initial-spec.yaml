@@ -162,7 +162,7 @@ plan:
   step_id: step-005
 repo:
   default_branch: main
-  url: git@github.com:benthepsychologist/life-cli.git
+  url: git@github.com:benthepsychologist/life.git
   working_branch: main
 tier: C
 title: Life-CLI - Lightweight CLI Orchestrator for Personal Data Pipelines

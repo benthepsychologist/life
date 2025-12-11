@@ -5,7 +5,7 @@ title: Emails and batch send
 owner: benthepsychologist
 goal: Implement email sending and batch send with Jinja templates as job runner functions
 labels: []
-project_slug: life-cli
+project_slug: life
 spec_version: 1.0.0
 created: 2025-12-10T17:13:55.375033+00:00
 updated: 2025-12-10T17:13:55.375033+00:00
@@ -36,7 +36,7 @@ Add a `life_jobs.messages` module with functions for:
 
 ### Background
 
-We are migrating CLI tools from `/workspace/tools/` into life-cli's job runner. The existing `life_jobs.graph.send_mail` function provides basic email sending via Microsoft Graph. We need higher-level functions that support:
+We are migrating CLI tools from `/workspace/tools/` into life's job runner. The existing `life_jobs.graph.send_mail` function provides basic email sending via Microsoft Graph. We need higher-level functions that support:
 
 1. **Markdown templates** with YAML frontmatter for subject/defaults
 2. **Jinja2 rendering** with `{{variable}}` substitution

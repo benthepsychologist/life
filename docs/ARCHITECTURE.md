@@ -2,7 +2,7 @@
 
 ## Overview
 
-life-cli implements a strict three-layer architecture for personal and clinical automation:
+life implements a strict three-layer architecture for personal and clinical automation:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -66,7 +66,7 @@ There is no user job directory, no overrides, no merge semantics. Users modify j
 
 ### 3. Python-Only Orchestration
 
-Inside life-cli, always call the Python job runner directly:
+Inside life, always call the Python job runner directly:
 
 ```python
 from life.job_runner import run_job

@@ -1,6 +1,6 @@
 # Life-CLI Example Configuration
 #
-# This file demonstrates the key features of life-cli configuration.
+# This file demonstrates the key features of life configuration.
 # Copy to ~/life.yml or ./life.yml and customize for your workflows.
 
 # Workspace: Base directory for your data files

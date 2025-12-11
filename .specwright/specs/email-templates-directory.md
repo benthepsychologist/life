@@ -5,7 +5,7 @@ title: Email Templates Directory
 owner: benthepsychologist
 goal: Add ~/.life/templates/email/ as default template directory for life email commands
 labels: []
-project_slug: life-cli
+project_slug: life
 spec_version: 1.0.0
 created: 2025-12-11T13:34:32.310834+00:00
 updated: 2025-12-11T13:34:32.310834+00:00

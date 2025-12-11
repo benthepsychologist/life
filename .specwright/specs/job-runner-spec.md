@@ -1,9 +1,9 @@
 ---
 version: "0.1"
 tier: C
-title: "life-cli Job Runner: morch Integration"
+title: "life Job Runner: morch Integration"
 owner: benthepsychologist
-goal: Transform life-cli into a job runner for arbitrary Python functions, using morch for Microsoft API operations
+goal: Transform life into a job runner for arbitrary Python functions, using morch for Microsoft API operations
 labels: [cli, job-runner, morch, dataverse, graph, python]
 project_slug: life-job-runner
 spec_version: 1.0.0
@@ -11,15 +11,15 @@ created: 2025-12-09T10:00:00+00:00
 updated: 2025-12-09T11:00:00+00:00
 orchestrator_contract: "standard"
 repo:
-  path: /workspace/life-cli
+  path: /workspace/life
   working_branch: "main"
 ---
 
-# life-cli Job Runner: morch Integration
+# life Job Runner: morch Integration
 
 ## Objective
 
-> Evolve life-cli into a lightweight job runner for arbitrary Python functions, using `morch` for Microsoft Graph and Dataverse operations. Jobs are YAML-defined sequences of `call: module.function` steps, not type-specific processors.
+> Evolve life into a lightweight job runner for arbitrary Python functions, using `morch` for Microsoft Graph and Dataverse operations. Jobs are YAML-defined sequences of `call: module.function` steps, not type-specific processors.
 
 ## Acceptance Criteria
 
@@ -39,7 +39,7 @@ repo:
 
 ### Background
 
-life-cli currently orchestrates external CLI tools via subprocess:
+life currently orchestrates external CLI tools via subprocess:
 
 ```yaml
 sync:
@@ -58,7 +58,7 @@ Meanwhile, `morch` now provides clean Python clients for Dataverse and Graph API
 
 ### Key Design Principle: Function Calls, Not Processors
 
-Instead of a lorchestra-style `job_type` + `ProcessorRegistry` pattern (which is engine-heavy), life-cli uses a simpler model:
+Instead of a lorchestra-style `job_type` + `ProcessorRegistry` pattern (which is engine-heavy), life uses a simpler model:
 
 **Jobs = ordered steps, each step = Python function call**
 
@@ -302,7 +302,7 @@ jobs:
         args:
           account: drben
           to: [test@example.com]
-          subject: "Test from life-cli"
+          subject: "Test from life"
           body: "This is a test email sent via life run."
 ```
 

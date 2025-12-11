@@ -5,7 +5,7 @@ title: Add life pipeline Verbs (lorchestra-first)
 owner: benthepsychologist
 goal: Add thin CLI verbs that invoke lorchestra composite jobs for daily pipeline operations
 labels: [feature, cli, pipeline]
-project_slug: life-cli
+project_slug: life
 spec_version: 1.0.0
 created: 2025-12-11T00:00:00+00:00
 updated: 2025-12-11T00:00:00+00:00
@@ -24,7 +24,7 @@ repo:
 
 The daily data pipeline is currently run via bash scripts in `life-cockpit/scripts/`. These scripts call `lorchestra run <job>` repeatedly with failure tracking.
 
-This spec adds `life pipeline <verb>` commands as a thin UI layer. All pipeline logic stays in lorchestra - life-cli just provides UX conveniences.
+This spec adds `life pipeline <verb>` commands as a thin UI layer. All pipeline logic stays in lorchestra - life just provides UX conveniences.
 
 ### Prerequisites
 
@@ -51,7 +51,7 @@ Each pipeline verb follows this exact call chain:
 1. User CLI command
    └── life pipeline ingest
 
-2. life-cli verb → life job
+2. life verb → life job
    └── run_job("pipeline.ingest", variables={...})
 
 3. life job → lorchestra runner (via pipeline.yaml)
@@ -67,7 +67,7 @@ Each pipeline verb follows this exact call chain:
 ```
 
 **Naming convention:**
-- life-cli command names, life job names, and lorchestra job IDs are **congruent by default** for simplicity
+- life command names, life job names, and lorchestra job IDs are **congruent by default** for simplicity
 - They CAN differ - the mapping is explicit in `pipeline.yaml` via the `job_id` argument
 - Example of divergence (not used now, but allowed):
   ```yaml
@@ -79,9 +79,9 @@ Each pipeline verb follows this exact call chain:
   ```
 
 **Boundary rules:**
-- life-cli contains NO job lists
-- life-cli contains NO DAG/batching logic
-- life-cli has NO awareness of atomic lorchestra jobs (`ingest_*`, `canonize_*`, etc.)
+- life contains NO job lists
+- life contains NO DAG/batching logic
+- life has NO awareness of atomic lorchestra jobs (`ingest_*`, `canonize_*`, etc.)
 
 ---
 
@@ -111,14 +111,14 @@ Each pipeline verb follows this exact call chain:
 - [ ] Counts are based on files under `{vault_path}/views/`, not the entire vault
 
 **Architecture:**
-- [ ] No job lists in life-cli code
-- [ ] No batching logic in life-cli code
+- [ ] No job lists in life code
+- [ ] No batching logic in life code
 - [ ] Each verb makes exactly ONE lorchestra call
 
 ### Constraints
 
-- life-cli must NOT know internal lorchestra job IDs (only composite job names)
-- life-cli must NOT implement batching or DAG logic
+- life must NOT know internal lorchestra job IDs (only composite job names)
+- life must NOT implement batching or DAG logic
 - Subprocess adapter for lorchestra is acceptable (until Python API exists)
 
 ---
@@ -500,7 +500,7 @@ pytest tests/test_pipeline.py --cov=src/life/commands/pipeline --cov=src/life_jo
 
 **Naming divergence:**
 
-life-cli command names, life job names, and lorchestra job IDs are kept identical for the pipeline verbs by convention, but they are NOT required to match. Any divergence is explicitly encoded in `pipeline.yaml` via the `job_id` argument to `run_lorchestra`.
+life command names, life job names, and lorchestra job IDs are kept identical for the pipeline verbs by convention, but they are NOT required to match. Any divergence is explicitly encoded in `pipeline.yaml` via the `job_id` argument to `run_lorchestra`.
 
 Current mapping:
 | CLI Command | life Job | lorchestra Job |

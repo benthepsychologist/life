@@ -3,9 +3,9 @@ version: "0.1"
 tier: B
 title: life-jobs-verbs-refactor
 owner: benthepsychologist
-goal: Clean up life-cli architecture to match the jobs/verbs/processors model
+goal: Clean up life architecture to match the jobs/verbs/processors model
 labels: [architecture, refactor]
-project_slug: life-cli
+project_slug: life
 spec_version: 1.0.0
 created: 2025-12-10T17:47:00+00:00
 updated: 2025-12-10T18:00:00+00:00
@@ -18,7 +18,7 @@ repo:
 
 ## Objective
 
-Refactor life-cli to cleanly implement the three-layer architecture:
+Refactor life to cleanly implement the three-layer architecture:
 
 1. **Verbs** (Shell layer) - Human-facing commands that call jobs
 2. **Jobs** (YAML) - Declarative step definitions that call processors
@@ -42,7 +42,7 @@ Refactor life-cli to cleanly implement the three-layer architecture:
 - No "special" commands that bypass the architecture
 
 ### 4. Python-only orchestration
-- Inside life-cli, always call the Python job runner directly
+- Inside life, always call the Python job runner directly
 - Do not use subprocesses to call `life run` internally
 - All orchestration stays in-process
 

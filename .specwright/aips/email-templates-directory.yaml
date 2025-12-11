@@ -1,9 +1,9 @@
-aip_id: AIP-life-cli-2025-12-11-001
+aip_id: AIP-life-2025-12-11-001
 title: email-templates-directory
 tier: C
 version: "0.1"
 spec_version: 1.0.0
-project_slug: life-cli
+project_slug: life
 created: "2025-12-11T14:00:00+00:00"
 updated: "2025-12-11T14:00:00+00:00"
 
@@ -12,7 +12,7 @@ meta:
   created_by: claude-code
 
 repo:
-  url: git@github.com:benthepsychologist/life-cli.git
+  url: git@github.com:benthepsychologist/life.git
   default_branch: main
   working_branch: feat/email-templates-directory
 
@@ -39,7 +39,7 @@ context:
     - Do NOT modify `src/life_jobs/email.py` - processors receive fully-resolved paths only
 
 orchestrator_contract:
-  artifacts_dir: .aip_artifacts/AIP-life-cli-2025-12-11-001
+  artifacts_dir: .aip_artifacts/AIP-life-2025-12-11-001
   logging: jsonl
   state_machine:
     states:

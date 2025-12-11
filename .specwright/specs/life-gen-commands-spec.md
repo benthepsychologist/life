@@ -4,7 +4,7 @@ title: life gen commands spec
 owner: benthepsychologist
 goal: Implement life gen commands spec
 labels: []
-project_slug: life-cli
+project_slug: life
 spec_version: 1.0.0
 created: 2025-11-11T18:57:13.364422+00:00
 updated: 2025-11-11T18:57:13.364422+00:00
