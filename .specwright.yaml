@@ -7,5 +7,5 @@ repo:
 user:
   default_owner: null
 current:
-  spec: .specwright/specs/life-jobs-verbs-refactor.md
-  aip: /workspace/life-cli/.specwright/aips/life-jobs-verbs-refactor.yaml
+  spec: .specwright/specs/email-templates-directory.md
+  aip: .specwright/aips/email-templates-directory.yaml

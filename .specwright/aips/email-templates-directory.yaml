@@ -1,0 +1,181 @@
+aip_id: AIP-life-cli-2025-12-11-001
+title: email-templates-directory
+tier: C
+version: "0.1"
+spec_version: 1.0.0
+project_slug: life-cli
+created: "2025-12-11T14:00:00+00:00"
+updated: "2025-12-11T14:00:00+00:00"
+
+meta:
+  created_at: "2025-12-11T14:00:00+00:00"
+  created_by: claude-code
+
+repo:
+  url: git@github.com:benthepsychologist/life-cli.git
+  default_branch: main
+  working_branch: feat/email-templates-directory
+
+objective:
+  goal: Add ~/.life/templates/email/ as default template directory for life email commands
+  acceptance_criteria:
+    - CI green (lint + unit)
+    - 70% test coverage on new `_resolve_template_path()` function
+    - "`life email send --template reminder` resolves to `~/.life/templates/email/reminder.md`"
+    - "`life email batch reminder recipients.json` works with template name"
+    - "Config `email.templates_dir` overrides default location"
+    - Full paths still work (backwards compatible)
+    - "`life_jobs.email.*` processors unchanged - accept absolute paths only, no config awareness"
+    - "`life run email.send_templated --var template=/full/path.md` works (power user path, no magic)"
+
+context:
+  background: |
+    Currently, `life email send` and `life email batch` require full paths to template files.
+    This is cumbersome for frequently-used templates. Users should be able to reference
+    templates by name only (e.g., `--template reminder` instead of full path).
+  constraints:
+    - Maintain backwards compatibility with full paths
+    - Follow existing config patterns (see `_get_template_path()` in `commands/today.py`)
+    - Do NOT modify `src/life_jobs/email.py` - processors receive fully-resolved paths only
+
+orchestrator_contract:
+  artifacts_dir: .aip_artifacts/AIP-life-cli-2025-12-11-001
+  logging: jsonl
+  state_machine:
+    states:
+      - pending
+      - running
+      - awaiting_human
+      - failed
+      - succeeded
+    events:
+      - run_step
+      - complete
+      - retry
+
+plan:
+  - step_id: step-001
+    description: Add template resolution helper function
+    kind: code
+    role: coding_agent
+    prompt: |
+      Add `_resolve_template_path()` function to `src/life/commands/email.py`.
+
+      The function should:
+      1. Check if template contains `/`, `\`, or starts with `~` - if so, expand and return as path
+      2. Otherwise, look up in templates directory from config (`email.templates_dir`) or default (`~/.life/templates/email`)
+      3. If no extension, try `.md` first, then `.html`
+      4. Default to `.md` if neither exists (let processor give clear error)
+
+      Place the function after the existing helper functions (`_get_jobs_dir`, `_get_event_log`, `_get_default_account`).
+    outputs:
+      - src/life/commands/email.py
+
+  - step_id: step-002
+    description: Update send command to use template resolution
+    kind: code
+    role: coding_agent
+    prompt: |
+      Modify the `send()` command in `src/life/commands/email.py` to resolve template paths.
+
+      Add this line after getting the config, before the dry_run check:
+      ```python
+      if template:
+          template = _resolve_template_path(template, config)
+      ```
+
+      This ensures the template path is resolved before being passed to `run_job()`.
+    outputs:
+      - src/life/commands/email.py
+
+  - step_id: step-003
+    description: Update batch command to use template resolution
+    kind: code
+    role: coding_agent
+    prompt: |
+      Modify the `batch()` command in `src/life/commands/email.py` to resolve template paths.
+
+      Add this line after getting the config, before the dry_run check:
+      ```python
+      template = _resolve_template_path(template, config)
+      ```
+
+      The batch command always has a template (it's a required argument), so no `if` check needed.
+    outputs:
+      - src/life/commands/email.py
+
+  - step_id: step-004
+    description: Create tests for template resolution
+    kind: code
+    role: coding_agent
+    prompt: |
+      Create new file `tests/test_email_commands.py` with comprehensive tests for `_resolve_template_path()`.
+
+      Test cases:
+      1. Full path passthrough (`/abs/path/bar.md` → unchanged)
+      2. Home path passthrough (`~/foo/bar.md` → expanded path)
+      3. Tilde-only path (`~reminder` edge case - treated as path, not template name)
+      4. Template name resolution (`reminder` → `~/.life/templates/email/reminder.md`)
+      5. Template with `.md` extension (`reminder.md` → `~/.life/templates/email/reminder.md`)
+      6. Template with `.html` extension (`reminder.html` → `~/.life/templates/email/reminder.html`)
+      7. Extension precedence (when both `.md` and `.html` exist, `.md` wins)
+      8. Custom `templates_dir` from config overrides default
+
+      Use pytest and tmp_path fixture for filesystem tests.
+      Import the function: `from life.commands.email import _resolve_template_path`
+    outputs:
+      - tests/test_email_commands.py
+
+  - step_id: step-005
+    description: Update ARCHITECTURE.md documentation
+    kind: code
+    role: coding_agent
+    prompt: |
+      Add documentation to `docs/ARCHITECTURE.md` about email template resolution.
+
+      Add two new sections after the existing content:
+
+      1. "User Content vs User Jobs" section explaining:
+         - `~/.life/templates/*` for user content (email templates, notes)
+         - `~/.life/jobs/` reserved for future user-defined jobs
+         - Distinction between content files and job definitions
+
+      2. "Email Template Resolution" section with:
+         - Table showing input → output resolution
+         - Note about `email.templates_dir` config override
+    outputs:
+      - docs/ARCHITECTURE.md
+
+  - step_id: step-006
+    description: Run linting and fix any issues
+    kind: validation
+    role: coding_agent
+    prompt: |
+      Run ruff linting on the modified files:
+      ```bash
+      ruff check src/life/commands/email.py tests/test_email_commands.py
+      ```
+
+      Fix any issues found.
+    commands:
+      - ruff check src/life/commands/email.py tests/test_email_commands.py
+
+  - step_id: step-007
+    description: Run tests and verify coverage
+    kind: validation
+    role: coding_agent
+    prompt: |
+      Run the new tests:
+      ```bash
+      pytest tests/test_email_commands.py -v
+      ```
+
+      Then run the full test suite:
+      ```bash
+      pytest -q
+      ```
+
+      Verify all tests pass.
+    commands:
+      - pytest tests/test_email_commands.py -v
+      - pytest -q
