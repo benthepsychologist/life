@@ -20,6 +20,11 @@ ALLOWED_EVENT_TYPES = frozenset({
     "step.completed",
     "job.completed",
     "job.failed",
+    # Script events (quarantined script runner)
+    "script.started",
+    "script.completed",
+    "script.failed",
+    "script.override.forced",
 })
 
 

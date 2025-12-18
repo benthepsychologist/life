@@ -209,6 +209,23 @@ Executes shell commands with:
 - Error handling
 - Logging
 
+### Quarantined Scripts (`scripts/` module)
+
+For temporary workflow scripts that need governance but aren't ready to be proper jobs.
+See [scripts/README.md](scripts/README.md) for details.
+
+Key files:
+- `src/life/scripts/metadata.py` - Metadata validation
+- `src/life/scripts/state.py` - TTL tracking
+- `src/life/scripts/runner.py` - Script execution
+
+Usage:
+```bash
+life script list              # List available scripts
+life script info my-script    # Show metadata
+life script run my-script     # Run with TTL enforcement
+```
+
 ## Adding a New Feature
 
 Example: Adding a new subcommand `validate`
