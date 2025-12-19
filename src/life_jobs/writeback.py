@@ -107,10 +107,23 @@ def _build_patch(
     Returns:
         Dict of Dataverse fields to update
     """
+    def _markdown_to_html(markdown_text: str) -> str:
+        try:
+            import markdown as markdown_lib  # type: ignore[import-not-found]
+        except Exception as e:  # pragma: no cover
+            raise RuntimeError(
+                "Markdown-to-HTML conversion requested (body_html) but the 'markdown' package "
+                "is not installed. Install it (e.g., pip install markdown)."
+            ) from e
+
+        return markdown_lib.markdown(markdown_text)
+
     patch = {}
     for dv_field, source_key in editable_fields.items():
         if source_key == "body":
             patch[dv_field] = body
+        elif source_key == "body_html":
+            patch[dv_field] = _markdown_to_html(body)
         elif source_key in frontmatter:
             value = frontmatter[source_key]
             if value is not None:

@@ -7,5 +7,5 @@ repo:
 user:
   default_owner: null
 current:
-  spec: .specwright/specs/rename-to-life-no-cli.md
-  aip: .specwright/aips/rename-to-life-no-cli.yaml
+  spec: .specwright/specs/email-gmail-addition.md
+  aip: /workspace/life/.specwright/aips/email-gmail-addition.yaml

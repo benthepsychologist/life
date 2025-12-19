@@ -177,6 +177,19 @@ class TestBuildPatch:
         assert patch["crf_title"] == "Title"
         assert patch["crf_note"] == "This is the note content."
 
+    def test_build_patch_with_body_html(self):
+        """Should convert markdown body to HTML when mapped via body_html."""
+        frontmatter = {}
+        body = "**Bold**\n\nParagraph"
+        editable_fields = {
+            "crf_rich": "body_html",
+        }
+
+        patch = _build_patch(frontmatter, body, editable_fields)
+
+        assert patch["crf_rich"].strip().startswith("<")
+        assert "<strong>Bold</strong>" in patch["crf_rich"]
+
     def test_build_patch_skips_missing_fields(self):
         """Should skip fields not in frontmatter."""
         frontmatter = {"title": "Title"}

@@ -1,0 +1,140 @@
+aip_id: AIP-life-2025-12-17-001
+context:
+  background: 'We have ad-hoc bash scripts for one-off workflows that bypass governance. They accumulate,
+    break silently, and never get cleaned up. This creates two problems:
+
+
+    1. **No visibility**: Scripts run without events, so we can''t trace failures
+
+    2. **No TTL**: Scripts stick around forever, becoming undocumented dependencies
+
+
+    The solution is NOT to make scripts first-class. Scripts are temporary glue. The wrapper enforces
+    that temporariness while providing basic observability.'
+  constraints:
+  - 'Scripts are glue-only: orchestrate, validate, invoke. No data processing.'
+  - Scripts are not registered capabilities—they don't appear in `life list`
+  - No automatic promotion command. Promotion = write a spec + build properly.
+  - Metadata file required; no metadata = no execution.
+  - Execution is subprocess-based; scripts never run in-process.
+created: '2025-12-17T20:34:45.952842+00:00'
+meta:
+  created_at: '2025-12-17T20:34:45.952842+00:00'
+  created_by: benthepsychologist
+objective:
+  acceptance_criteria:
+  - '`life script <name>` finds and executes `<name>.sh` from search path'
+  - Blocks execution if `<name>.meta.yaml` missing
+  - Emits `script.started`, `script.completed`, `script.failed` via standard event emitter
+  - Warns at 1×TTL, requires confirmation at 2×TTL, blocks at 3×TTL
+  - '`--force` or `--yes` bypasses TTL block, logs `script.override.forced` event'
+  - 'Non-TTY mode: overdue scripts fail unless `--yes` or `--force`'
+  - 'Name validation: `[a-z0-9-]+` only, no path traversal'
+  - CI green (lint + unit)
+  - 80% test coverage for script runner
+  goal: Governed bash wrapper for temporary workflow scripts
+orchestrator_contract:
+  artifacts_dir: .aip_artifacts/AIP-life-2025-12-17-001
+  logging: jsonl
+  state_machine:
+    events:
+    - run_step
+    - await_gate
+    - approve
+    - reject
+    - retry
+    - escalate
+    - complete
+    states:
+    - pending
+    - running
+    - awaiting_human
+    - failed
+    - succeeded
+    - rolled_back
+plan:
+- description: Script Metadata + Validation
+  gate_ref: 'G1: Foundation'
+  kind: code
+  prompt: 'Create `src/life/scripts/metadata.py` with:
+
+    - `ScriptMetadata` dataclass matching the schema above
+
+    - `load_metadata(name: str, search_paths: list) -> tuple[Path, ScriptMetadata]`
+
+    - `validate_name(name: str)` that enforces `[a-z0-9-]+`, rejects traversal
+
+    - `validate_metadata()` that checks required fields including `promotion_target`
+
+    Create `src/life/scripts/state.py` with:
+
+    - `ScriptState` dataclass (first_seen, last_run, run_count, force_count)
+
+    - `load_state(name: str) -> ScriptState` from `~/.life/state/scripts/<name>.json`
+
+    - `save_state(name: str, state: ScriptState)`
+
+    - `calculate_tier(metadata, state) -> fresh | stale | overdue | blocked`'
+  role: agentic
+  step_id: step-001
+- description: Script Runner
+  gate_ref: 'G2: Execution'
+  kind: code
+  prompt: 'Create `src/life/scripts/runner.py` with:
+
+    - `run_script(name: str, args: list, force: bool, yes: bool)` main entry
+
+    - Search path resolution: `$LIFE_SCRIPTS_DIR` → `~/.life/scripts/` → `./scripts/`
+
+    - TTL tier check with appropriate warn/confirm/block behavior
+
+    - Non-TTY detection: if overdue and not TTY, require `--yes` or `--force`
+
+    - Subprocess execution with controlled env (add `LIFE_CORRELATION_ID`)
+
+    - Event emission through standard emitter (script.started/completed/failed)
+
+    - State update after run (first_seen, last_run, run_count)
+
+    - Force/yes override logging (script.override.forced)'
+  role: agentic
+  step_id: step-002
+- description: CLI Integration
+  gate_ref: 'G3: Interface'
+  kind: code
+  prompt: 'Add `script` command to CLI:
+
+    - `life script <name> [args]` - run a script
+
+    - `life script <name> --force` - bypass all TTL checks
+
+    - `life script <name> --yes` - acknowledge overdue risk
+
+    - `life script <name> --info` - show metadata and TTL status
+
+    - `life script --list` - list scripts in search path (debugging aid)
+
+    Ensure wrapper flags are consumed, not passed to script.'
+  role: agentic
+  step_id: step-003
+- description: Directory Bootstrap + Docs
+  gate_ref: 'G4: Setup'
+  kind: code
+  prompt: '- Create `~/.life/scripts/` and `~/.life/state/scripts/` on first use if missing
+
+    - Create `scripts/README.md` in repo with "scripts are temporary" message
+
+    - Add script-related docs to CONTRIBUTING.md or create docs/scripts.md'
+  role: agentic
+  step_id: step-004
+project_slug: life
+repo:
+  default_branch: main
+  url: git@github.com:benthepsychologist/life.git
+  working_branch: feat/script-wrapper
+spec_version: 1.0.0
+tier: C
+title: Incubator Script Wrapper
+updated: '2025-12-17T20:34:45.952842+00:00'
+version: '0.1'
+
