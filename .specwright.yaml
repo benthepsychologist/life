@@ -1,11 +1,13 @@
-version: '0.1'
+version: "0.1"
 paths:
-  specs: .specwright/specs
-  aips: .specwright/aips
+  specs: ~/.local/local-governor/projects/life/specs
+  aips: ~/.local/local-governor/projects/life/aips
+  runs: ~/.local/local-governor/projects/life/runs
+  errors: ~/.local/local-governor/projects/life/errors
 repo:
   default_branch: main
 user:
-  default_owner: null
+  default_owner: benthepsychologist
 current:
-  spec: .specwright/specs/email-gmail-addition.md
-  aip: /workspace/life/.specwright/aips/email-gmail-addition.yaml
+  spec:
+  aip:

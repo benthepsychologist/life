@@ -21,10 +21,7 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     Load configuration from YAML file.
 
     Args:
-        config_path: Path to config file. If None, tries:
-            1. ./.life/config.yml (project-local)
-            2. ./life.yml (legacy)
-            3. ~/life.yml (user global)
+        config_path: Path to config file. If None, uses ~/.life/config.yml
 
     Returns:
         Dictionary containing configuration
@@ -37,25 +34,13 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     if config_path:
         path = Path(config_path).expanduser()
     else:
-        # Try default locations (in order of precedence)
-        project_config = Path.cwd() / ".life" / "config.yml"
-        local_config = Path.cwd() / "life.yml"
-        home_config = Path.home() / "life.yml"
+        # Use user config only
+        path = Path.home() / ".life" / "config.yml"
 
-        if project_config.exists():
-            path = project_config
-        elif local_config.exists():
-            path = local_config
-        elif home_config.exists():
-            path = home_config
-        else:
+        if not path.exists():
             raise FileNotFoundError(
-                "No config file found. Tried:\n"
-                f"  - {project_config} (project-local)\n"
-                f"  - {local_config} (legacy)\n"
-                f"  - {home_config} (user global)\n"
-                "Run 'life init' to create a project config, "
-                "or use --config to specify a custom location."
+                f"No config file found at {path}\n"
+                "Create ~/.life/config.yml or use --config to specify a custom location."
             )
 
     # Load YAML

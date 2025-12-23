@@ -7,7 +7,7 @@ name = "life"
 version = "0.1.0"
 description = "Lightweight, stateful, CLI-first orchestrator for personal data pipelines"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Ben Mensi", email = "ben@benthepsychologist.com" }]
 keywords = ["cli", "orchestration", "data-pipeline", "workflow", "automation"]
@@ -31,9 +31,15 @@ dependencies = [
     "markdown>=3.6",
     "morch>=0.1.0",
     "gorch>=0.1.0",
+    "authctl>=0.1.0",
     "jinja2>=3.0",
     "llm>=0.19",
 ]
+
+[tool.uv.sources]
+morch = { path = "/workspace/morch", editable = true }
+gorch = { path = "/workspace/gorch", editable = true }
+authctl = { path = "/workspace/authctl", editable = true }
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.1.0"]
