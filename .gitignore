@@ -152,3 +152,6 @@ Thumbs.db
 !pyproject.json
 !package.json
 !tsconfig.json
+
+# Specwright ephemeral artifacts
+.specwright/tmp/

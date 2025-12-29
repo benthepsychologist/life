@@ -1,13 +1,3 @@
-version: "0.1"
-paths:
-  specs: ~/.local/local-governor/projects/life/specs
-  aips: ~/.local/local-governor/projects/life/aips
-  runs: ~/.local/local-governor/projects/life/runs
-  errors: ~/.local/local-governor/projects/life/errors
-repo:
-  default_branch: main
-user:
-  default_owner: benthepsychologist
-current:
-  spec:
-  aip:
+version: "0.6"
+governor:
+  path: ~/.local/local-governor
