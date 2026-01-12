@@ -12,7 +12,7 @@ import typer
 import yaml
 
 from life import __version__
-from life.commands import config, email, jobs, pipeline, run, script, today
+from life.commands import config, email, jobs, pipeline, pm, run, script, today
 from life.config import load_config
 
 # Initialize main app
@@ -29,6 +29,7 @@ app.add_typer(config.app, name="config")
 app.add_typer(run.app, name="run")
 app.add_typer(jobs.app, name="jobs")
 app.add_typer(pipeline.app, name="pipeline")
+app.add_typer(pm.app, name="pm")
 app.add_typer(script.app, name="script")
 
 # Note: state is created fresh in main_callback, not at module level

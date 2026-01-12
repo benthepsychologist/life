@@ -263,6 +263,7 @@ def run_script(
 
         # Run script with strict mode enforced
         # Use bash -c with explicit set -euo pipefail then source the script
+        # Capture output and forward to stdout/stderr so tests can assert on it
         result = subprocess.run(
             ["bash", "-c", f"set -euo pipefail; source {script_path}", "--", *args],
             env=env,
@@ -271,13 +272,13 @@ def run_script(
             text=True,
         )
 
-        duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
-
-        # Pass through output
+        # Pass through captured output (if any)
         if result.stdout:
             print(result.stdout, end="")
         if result.stderr:
             print(result.stderr, end="", file=sys.stderr)
+
+        duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
 
         # Update state
         now = datetime.now(timezone.utc).isoformat()
@@ -299,10 +300,6 @@ def run_script(
                 },
             )
         else:
-            # Get last 10 lines of stderr
-            stderr_lines = result.stderr.strip().split("\n") if result.stderr else []
-            stderr_tail = "\n".join(stderr_lines[-10:])
-
             event_client.log_event(
                 event_type="script.failed",
                 correlation_id=correlation_id,
@@ -310,7 +307,6 @@ def run_script(
                 payload={
                     "script": name,
                     "exit_code": result.returncode,
-                    "stderr_tail": stderr_tail,
                 },
                 error_message=f"Script exited with code {result.returncode}",
             )
@@ -373,7 +369,12 @@ def list_scripts() -> List[dict]:
         List of script info dictionaries.
     """
     scripts = []
-    search_paths = get_search_paths()
+
+    env_dir = os.environ.get("LIFE_SCRIPTS_DIR")
+    if env_dir:
+        search_paths = [Path(env_dir)]
+    else:
+        search_paths = get_search_paths()
 
     for search_path in search_paths:
         search_path = Path(search_path).expanduser()

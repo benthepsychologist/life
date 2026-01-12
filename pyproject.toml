@@ -32,14 +32,19 @@ dependencies = [
     "morch>=0.1.0",
     "gorch>=0.1.0",
     "authctl>=0.1.0",
+    "storacle>=0.1.0",
+    "workman>=0.1.0",
     "jinja2>=3.0",
     "llm>=0.19",
+    "pytest>=9.0.2",
 ]
 
 [tool.uv.sources]
 morch = { path = "/workspace/morch", editable = true }
 gorch = { path = "/workspace/gorch", editable = true }
 authctl = { path = "/workspace/authctl", editable = true }
+storacle = { path = "/workspace/storacle", editable = true }
+workman = { path = "/workspace/workman", editable = true }
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.1.0"]
