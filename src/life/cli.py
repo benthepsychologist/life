@@ -12,7 +12,7 @@ import typer
 import yaml
 
 from life import __version__
-from life.commands import config, email, jobs, pipeline, pm, run, script, today
+from life.commands import config, email, jobs, pipeline, pm, run, script, today, work
 from life.config import load_config
 
 # Initialize main app
@@ -31,6 +31,7 @@ app.add_typer(jobs.app, name="jobs")
 app.add_typer(pipeline.app, name="pipeline")
 app.add_typer(pm.app, name="pm")
 app.add_typer(script.app, name="script")
+app.add_typer(work.app, name="work")
 
 # Note: state is created fresh in main_callback, not at module level
 
@@ -87,7 +88,7 @@ def main_callback(
     # Some commands don't need config (version)
     # Job runner commands (run, jobs, today) can work with defaults if no config
     commands_without_config = ["version"]
-    commands_with_optional_config = ["today", "email", "run", "jobs", "pipeline", "script"]
+    commands_with_optional_config = ["today", "email", "run", "jobs", "pipeline", "script", "pm", "work"]
     if ctx.invoked_subcommand and ctx.invoked_subcommand not in commands_without_config:
         try:
             config = load_config(config_path)
