@@ -144,3 +144,15 @@ def complete(
     ctx = _make_ctx(correlation_id)
     payload = {"work_item_id": work_item_id}
     _execute_op("pm.work_item.complete", payload, ctx)
+
+
+@app.command()
+def move(
+    work_item_id: str = typer.Argument(..., help="Work item ID to move"),
+    to_project: str = typer.Option(..., "--to-project", "-t", help="Destination project ID (required)"),
+    correlation_id: Optional[str] = typer.Option(None, "--correlation-id", help="Correlation ID"),
+) -> None:
+    """Move a work item to a different project."""
+    ctx = _make_ctx(correlation_id)
+    payload = {"work_item_id": work_item_id, "project_id": to_project}
+    _execute_op("pm.work_item.move", payload, ctx)

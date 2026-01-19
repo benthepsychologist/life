@@ -38,6 +38,10 @@ def _make_schema_registry(root: Path):
             "description": {"type": "string"},
         },
         "pm.work_item.complete": {"work_item_id": {"type": "string"}},
+        "pm.work_item.move": {
+            "work_item_id": {"type": "string"},
+            "project_id": {"type": "string"},
+        },
     }
     for name, properties in schemas.items():
         schema_path = root / "schemas" / vendor / name / "jsonschema" / "1-0-0" / "schema.json"
@@ -212,6 +216,110 @@ class TestWorkComplete:
 
         with patch("life.commands.work.execute_plan", return_value=mock_response):
             result = runner.invoke(app, ["work", "complete", "wi_nonexistent"])
+
+            assert result.exit_code == 1
+            assert "Assertion failed" in result.output
+
+
+class TestWorkMove:
+    """Tests for life work move command."""
+
+    def test_move_basic(self, mock_env):
+        """work move should move a work item to a different project."""
+        mock_response = [
+            {
+                "jsonrpc": "2.0",
+                "id": "op-1",
+                "result": {"status": "created", "event_id": "evt_move_123"},
+            }
+        ]
+
+        with patch("life.commands.work.execute_plan", return_value=mock_response) as mock_exec:
+            result = runner.invoke(
+                app,
+                ["work", "move", "wi_01HZYTEST", "--to-project", "proj_dest"],
+            )
+
+            assert result.exit_code == 0
+            assert "Created" in result.output
+            mock_exec.assert_called_once()
+            plan = mock_exec.call_args[0][0]
+            assert plan["meta"]["op"] == "pm.work_item.move"
+            # Check payload contains both work_item_id and project_id
+            wal_ops = [op for op in plan["ops"] if op["method"] == "wal.append"]
+            payload = wal_ops[0]["params"]["payload"]
+            assert payload["work_item_id"] == "wi_01HZYTEST"
+            assert payload["project_id"] == "proj_dest"
+
+    def test_move_with_correlation_id(self, mock_env):
+        """work move should accept correlation-id."""
+        mock_response = [
+            {
+                "jsonrpc": "2.0",
+                "id": "op-1",
+                "result": {"status": "created", "event_id": "evt_123"},
+            }
+        ]
+
+        with patch("life.commands.work.execute_plan", return_value=mock_response) as mock_exec:
+            result = runner.invoke(
+                app,
+                ["work", "move", "wi_01", "--to-project", "proj_01", "--correlation-id", "corr-move"],
+            )
+
+            assert result.exit_code == 0
+            plan = mock_exec.call_args[0][0]
+            plan_str = json.dumps(plan)
+            assert "corr-move" in plan_str
+
+    def test_move_requires_to_project(self, mock_env):
+        """work move should require --to-project option."""
+        result = runner.invoke(app, ["work", "move", "wi_01HZYTEST"])
+
+        assert result.exit_code == 2  # Typer exits with 2 for missing required option
+        assert "--to-project" in result.output or "Missing" in result.output
+
+    def test_move_to_nonexistent_project_fails(self, mock_env):
+        """Moving to non-existent project should show assertion error."""
+        mock_response = [
+            {
+                "jsonrpc": "2.0",
+                "id": "op-1",
+                "error": {
+                    "code": -32001,
+                    "message": "Aggregate project:proj_nonexistent does not exist",
+                },
+            }
+        ]
+
+        with patch("life.commands.work.execute_plan", return_value=mock_response):
+            result = runner.invoke(
+                app,
+                ["work", "move", "wi_01", "--to-project", "proj_nonexistent"],
+            )
+
+            assert result.exit_code == 1
+            assert "Assertion failed" in result.output
+            assert "does not exist" in result.output
+
+    def test_move_nonexistent_work_item_fails(self, mock_env):
+        """Moving non-existent work item should show assertion error."""
+        mock_response = [
+            {
+                "jsonrpc": "2.0",
+                "id": "op-1",
+                "error": {
+                    "code": -32001,
+                    "message": "Aggregate work_item:wi_nonexistent does not exist",
+                },
+            }
+        ]
+
+        with patch("life.commands.work.execute_plan", return_value=mock_response):
+            result = runner.invoke(
+                app,
+                ["work", "move", "wi_nonexistent", "--to-project", "proj_01"],
+            )
 
             assert result.exit_code == 1
             assert "Assertion failed" in result.output
