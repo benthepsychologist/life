@@ -1,0 +1,19 @@
+aip_id: AIP-life-2026-01-14-001
+step_id: step-001
+step_index: 1
+created_at: '2026-01-14T14:50:14.017777+00:00'
+objective: 'Add request schema for pm.work_item.move: - `schemas/org1.workman/pm.work_item.move/jsonschema/1-0-0/schema.json`
+  Schema: ```json { "$schema": "http://json-schema.org/draft-07/schema#", "type": "obje…'
+files_to_touch: []
+verification_steps: []
+allowed_paths:
+- /home/developer/.local/schema-transform-registry/schemas/org1.workman/**
+forbidden_paths:
+- '*.lock'
+- .env*
+- .git/**
+- secrets/**
+estimated_complexity: low
+requires_human_review: false
+provenance:
+  generator: deterministic

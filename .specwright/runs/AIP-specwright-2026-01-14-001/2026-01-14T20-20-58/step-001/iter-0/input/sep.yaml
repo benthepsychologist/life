@@ -1,0 +1,20 @@
+aip_id: AIP-specwright-2026-01-14-001
+step_id: step-001
+step_index: 1
+created_at: '2026-01-14T20:20:56.831708+00:00'
+objective: Add request schema for the pm.work_item.move operation
+files_to_touch:
+- path: schemas/org1.workman/pm.work_item.move/jsonschema/1-0-0/schema.json
+  action: create
+  description: Define the JSON schema for the move operation requiring work_item_id and project_id
+verification_steps:
+- command: test -f schemas/org1.workman/pm.work_item.move/jsonschema/1-0-0/schema.json && echo "File exists"
+  expected_outcome: Command exits successfully
+allowed_paths:
+- /home/developer/.local/schema-transform-registry/schemas/org1.workman/**
+forbidden_paths: []
+estimated_complexity: medium
+requires_human_review: false
+provenance:
+  generator: llm
+  model: gemini-3-pro-preview
