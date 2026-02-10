@@ -1,10 +1,10 @@
+# Copyright 2025 Ben Mensi
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Configuration loader for Life-CLI.
 
-Loads and validates YAML configuration files.
-
-Copyright 2025 Ben Mensi
-Licensed under the Apache License, Version 2.0
+Loads YAML configuration files.
 """
 
 import logging
@@ -34,9 +34,7 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     if config_path:
         path = Path(config_path).expanduser()
     else:
-        # Use user config only
         path = Path.home() / ".life" / "config.yml"
-
         if not path.exists():
             raise FileNotFoundError(
                 f"No config file found at {path}\n"
@@ -56,14 +54,6 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     # Expand workspace path if present
     if "workspace" in config:
         config["workspace"] = str(Path(config["workspace"]).expanduser())
-
-    # Validate configuration
-    from life.validation import validate_config
-    issues = validate_config(config)
-    if issues:
-        logger.warning("Configuration validation warnings:")
-        for issue in issues:
-            logger.warning(f"  - {issue}")
 
     return config
 

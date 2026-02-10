@@ -1,134 +1,57 @@
+# Copyright 2025 Ben Mensi
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Main CLI entry point for Life-CLI.
-
-Copyright 2025 Ben Mensi
-Licensed under the Apache License, Version 2.0
 """
 
-import logging
 from typing import Optional
 
 import typer
-import yaml
 
 from life import __version__
-from life.commands import config, email, jobs, pipeline, pm, run, script, today, work
-from life.config import load_config
+from life.executor import run_peek, run_pipeline
 
-# Initialize main app
 app = typer.Typer(
     name="life",
-    help="Lightweight, stateful, CLI-first orchestrator for personal data pipelines",
+    help="Lightweight CLI orchestrator for lorchestra jobs",
     no_args_is_help=True,
 )
 
-# Add subcommands
-app.add_typer(today.app, name="today")
-app.add_typer(email.app, name="email")
-app.add_typer(config.app, name="config")
-app.add_typer(run.app, name="run")
-app.add_typer(jobs.app, name="jobs")
-app.add_typer(pipeline.app, name="pipeline")
-app.add_typer(pm.app, name="pm")
-app.add_typer(script.app, name="script")
-app.add_typer(work.app, name="work")
 
-# Note: state is created fresh in main_callback, not at module level
-
-
-def setup_logging(verbose: bool = False):
-    """Configure logging for the CLI."""
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-
-@app.callback()
-def main_callback(
-    ctx: typer.Context,
-    config_path: Optional[str] = typer.Option(
-        None,
-        "--config",
-        "-c",
-        help="Path to config file (default: ~/life.yml or ./life.yml)",
-    ),
-    dry_run: bool = typer.Option(
-        False,
-        "--dry-run",
-        help="Show what would be executed without running commands",
-    ),
-    verbose: bool = typer.Option(
-        False,
-        "--verbose",
-        "-v",
-        help="Enable verbose logging",
-    ),
-    smoke_namespace: Optional[str] = typer.Option(
-        None,
-        "--smoke-namespace",
-        help="Route pipeline writes to smoke test namespace in BigQuery",
-    ),
+@app.command()
+def pipeline(
+    target: str = typer.Argument(..., help="Pipeline: ingest, canonize, formation, project, views, run-all"),
+    smoke_namespace: Optional[str] = typer.Option(None, "--smoke-namespace", help="Smoke test namespace"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
 ):
-    """
-    Life-CLI: Lightweight orchestrator for personal data pipelines.
+    """Run a lorchestra pipeline."""
+    run_pipeline(target, smoke_namespace=smoke_namespace, verbose=verbose)
 
-    Manages sync, merge, process, and status tasks defined in a YAML config file.
-    """
-    # Create fresh state for each invocation (not module-level to avoid pollution)
-    # Note: older typer versions (< 0.10) may pass booleans as strings
-    if isinstance(dry_run, str):
-        dry_run = dry_run.lower() not in ("false", "0", "no", "")
-    if isinstance(verbose, str):
-        verbose = verbose.lower() not in ("false", "0", "no", "")
 
-    state = {
-        "config": {},
-        "dry_run": dry_run,
-        "verbose": verbose,
-        "smoke_namespace": smoke_namespace,
-    }
-
-    # Setup logging
-    setup_logging(verbose)
-
-    # Load config if a subcommand is being invoked
-    # Some commands don't need config (version)
-    # Job runner commands (run, jobs, today) can work with defaults if no config
-    commands_without_config = ["version"]
-    commands_with_optional_config = ["today", "email", "run", "jobs", "pipeline", "script", "pm", "work"]
-    if ctx.invoked_subcommand and ctx.invoked_subcommand not in commands_without_config:
-        try:
-            config = load_config(config_path)
-            state["config"] = config
-
-            if verbose:
-                logging.debug(f"Loaded config from: {config_path or 'default location'}")
-                logging.debug(f"Dry run: {dry_run}")
-
-        except FileNotFoundError as e:
-            # Some commands can work without config (use defaults)
-            if ctx.invoked_subcommand in commands_with_optional_config:
-                if verbose:
-                    cmd = ctx.invoked_subcommand
-                    logging.debug(f"No config file found, using defaults for '{cmd}' command")
-            else:
-                typer.echo(f"Error: {e}", err=True)
-                raise typer.Exit(1)
-        except yaml.YAMLError as e:
-            typer.echo(f"Error: {e}", err=True)
-            raise typer.Exit(1)
-
-    # Store state in context for subcommands
-    ctx.obj = state
+@app.command()
+def peek(
+    target: str = typer.Argument(..., help="Table: clients, sessions, form-responses, raw-objects, canonical-objects, measurement-events, observations"),
+    id: Optional[str] = typer.Option(None, "--id", help="Filter by ID"),
+    limit: int = typer.Option(20, "--limit", "-n", help="Limit rows"),
+    format: str = typer.Option("table", "--format", "-f", help="Output: table, json, csv"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
+):
+    """Peek at a data table."""
+    run_peek(target, id=id, limit=limit, format=format, verbose=verbose)
 
 
 @app.command()
 def version():
     """Show version information."""
     typer.echo(f"life version {__version__}")
+
+
+# Static commands
+from life.commands import config, script
+
+app.add_typer(config.app, name="config")
+app.add_typer(script.app, name="script")
 
 
 def main():
