@@ -8,6 +8,7 @@ jobs:
           job_id: "pipeline.ingest"
           dry_run: "{dry_run}"
           verbose: "{verbose}"
+          smoke_namespace: "{smoke_namespace}"
 
   pipeline.canonize:
     description: "Run canonization pipeline"
@@ -18,6 +19,7 @@ jobs:
           job_id: "pipeline.canonize"
           dry_run: "{dry_run}"
           verbose: "{verbose}"
+          smoke_namespace: "{smoke_namespace}"
 
   pipeline.formation:
     description: "Run formation pipeline"
@@ -28,6 +30,7 @@ jobs:
           job_id: "pipeline.formation"
           dry_run: "{dry_run}"
           verbose: "{verbose}"
+          smoke_namespace: "{smoke_namespace}"
 
   pipeline.project:
     description: "Run local projection pipeline"
@@ -38,6 +41,7 @@ jobs:
           job_id: "pipeline.project"
           dry_run: "{dry_run}"
           verbose: "{verbose}"
+          smoke_namespace: "{smoke_namespace}"
 
   pipeline.views:
     description: "Create BigQuery projection views"
@@ -48,6 +52,7 @@ jobs:
           job_id: "pipeline.views"
           dry_run: "{dry_run}"
           verbose: "{verbose}"
+          smoke_namespace: "{smoke_namespace}"
 
   pipeline.run_all:
     description: "Run full daily pipeline"
@@ -58,3 +63,4 @@ jobs:
           job_id: "pipeline.daily_all"
           dry_run: "{dry_run}"
           verbose: "{verbose}"
+          smoke_namespace: "{smoke_namespace}"

@@ -1,12 +1,12 @@
-"""Pipeline operations via lorchestra subprocess.
+"""Pipeline operations via lorchestra library import.
 
 Implementation rules enforced here (Rule 8):
 - Never print
 - Never read global config or environment (except Path.expanduser)
 - Always return simple dicts
-- Side effects: file IO, lorchestra subprocess calls only
+- Side effects: file IO, lorchestra execute() calls only
 
-Transport: lorchestra CLI via subprocess
+Transport: lorchestra.execute() direct import
 Auth: None (lorchestra handles its own auth)
 
 Copyright 2025 Ben Mensi
@@ -14,16 +14,17 @@ Licensed under the Apache License, Version 2.0
 """
 
 import shutil
-import subprocess
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+from lorchestra import ExecutionResult, execute
 
 # I/O declaration for static analysis and auditing
 __io__ = {
     "reads": ["filesystem.vault"],
     "writes": ["filesystem.vault"],
-    "external": ["lorchestra.subprocess"],
+    "external": ["lorchestra.execute"],
 }
 
 
@@ -40,79 +41,77 @@ def run_lorchestra(
     job_id: str,
     dry_run: bool = False,
     verbose: bool = False,
+    smoke_namespace: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Execute a lorchestra composite job.
+    """Execute a lorchestra composite job via direct library import.
 
-    External: lorchestra.subprocess
+    External: lorchestra.execute
 
     Args:
         job_id: Lorchestra job ID (e.g., "pipeline.ingest")
-        dry_run: If True, passes --dry-run to lorchestra (accepts string "true"/"false")
-        verbose: If True, streams output in real-time (accepts string "true"/"false")
+        dry_run: If True, runs in dry-run mode (accepts string "true"/"false")
+        verbose: If True, enables verbose output (accepts string "true"/"false")
+        smoke_namespace: If set, routes BQ writes to smoke test namespace
 
     Returns:
-        {job_id, success, exit_code, duration_ms, stdout, stderr, error_message}
+        {job_id, success, run_id, duration_ms, rows_read, rows_written,
+         error_message, failed_steps}
     """
     # Convert string values from job runner to booleans
     dry_run = _to_bool(dry_run)
     verbose = _to_bool(verbose)
 
-    # Check if lorchestra is available
-    if shutil.which("lorchestra") is None:
-        return {
-            "job_id": job_id,
-            "success": False,
-            "exit_code": -1,
-            "duration_ms": 0,
-            "stdout": "",
-            "stderr": "",
-            "error_message": "lorchestra is not installed or not in PATH",
-        }
-
-    # Build command
-    cmd = ["lorchestra", "run", job_id]
-    if dry_run:
-        cmd.append("--dry-run")
+    # Normalize smoke_namespace (job runner may pass empty string for unset)
+    if smoke_namespace == "":
+        smoke_namespace = None
 
     start_time = time.time()
 
     try:
-        if verbose:
-            # Stream output in real-time, don't capture
-            result = subprocess.run(cmd, check=False)
-            stdout = ""
-            stderr = ""
-        else:
-            # Capture output
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            stdout = result.stdout or ""
-            stderr = result.stderr or ""
+        # Build envelope for lorchestra.execute()
+        envelope: Dict[str, Any] = {
+            "job_id": job_id,
+            "ctx": {"source": "life-cli"},
+        }
+
+        if smoke_namespace:
+            envelope["smoke_namespace"] = smoke_namespace
+
+        # Execute via lorchestra library
+        result: ExecutionResult = execute(envelope)
 
         duration_ms = int((time.time() - start_time) * 1000)
-        exit_code = result.returncode
-        success = exit_code == 0
 
+        # Build error information from failed steps
         error_message = None
-        if not success:
-            error_message = f"lorchestra exited with code {exit_code}"
-            if stderr:
-                # Include first line of stderr in error message
-                first_line = stderr.strip().split("\n")[0]
-                error_message = f"{error_message}: {first_line}"
+        failed_steps_info: List[Dict[str, Any]] = []
+        if not result.success:
+            for step in result.failed_steps:
+                step_info = {"step_id": step.step_id}
+                if step.error:
+                    # step.error is a dict with type and message
+                    if isinstance(step.error, dict):
+                        step_info["error"] = step.error.get("message", str(step.error))
+                    else:
+                        step_info["error"] = str(step.error)
+                failed_steps_info.append(step_info)
+
+            # Build summary error message
+            if failed_steps_info:
+                first_failure = failed_steps_info[0]
+                error_message = f"Step '{first_failure['step_id']}' failed"
+                if "error" in first_failure:
+                    error_message = f"{error_message}: {first_failure['error']}"
 
         return {
             "job_id": job_id,
-            "success": success,
-            "exit_code": exit_code,
+            "success": result.success,
+            "run_id": result.run_id,
             "duration_ms": duration_ms,
-            "stdout": stdout,
-            "stderr": stderr,
+            "rows_read": result.rows_read,
+            "rows_written": result.rows_written,
             "error_message": error_message,
+            "failed_steps": failed_steps_info,
         }
 
     except Exception as e:
@@ -120,11 +119,12 @@ def run_lorchestra(
         return {
             "job_id": job_id,
             "success": False,
-            "exit_code": -1,
+            "run_id": None,
             "duration_ms": duration_ms,
-            "stdout": "",
-            "stderr": "",
+            "rows_read": 0,
+            "rows_written": 0,
             "error_message": f"Failed to execute lorchestra: {e}",
+            "failed_steps": [],
         }
 
 

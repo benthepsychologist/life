@@ -37,14 +37,45 @@ def _get_vault_path(config: dict) -> Path:
 
 
 def _print_result(result: dict) -> None:
-    """Pretty-print pipeline result."""
+    """Pretty-print pipeline result with run metadata.
+
+    Displays:
+    - Status (success/failed)
+    - Run ID (from lorchestra ExecutionResult)
+    - Duration
+    - Rows read/written (on success)
+    - Error details with step_id (on failure)
+    """
     status = "✓ success" if result["success"] else "✗ failed"
     typer.secho(f"=== Pipeline: {result['job_id']} ===", bold=True)
     typer.secho(f"Status: {status}", fg="green" if result["success"] else "red")
+
+    # Show run_id if available
+    if result.get("run_id"):
+        typer.echo(f"Run ID: {result['run_id']}")
+
     typer.echo(f"Duration: {result['duration_ms'] / 1000:.1f}s")
 
-    if not result["success"] and result.get("error_message"):
-        typer.secho(f"Error: {result['error_message']}", fg="red")
+    # Show row counts on success
+    if result["success"]:
+        rows_read = result.get("rows_read", 0)
+        rows_written = result.get("rows_written", 0)
+        if rows_read > 0 or rows_written > 0:
+            typer.echo(f"Rows: {rows_read} read, {rows_written} written")
+    else:
+        # Show detailed error information on failure
+        if result.get("run_id"):
+            typer.secho(f"Failed Run: {result['run_id']}", fg="red")
+
+        # Show failed steps with details
+        failed_steps = result.get("failed_steps", [])
+        if failed_steps:
+            for step in failed_steps:
+                step_id = step.get("step_id", "unknown")
+                error = step.get("error", "unknown error")
+                typer.secho(f"  Step '{step_id}': {error}", fg="red")
+        elif result.get("error_message"):
+            typer.secho(f"Error: {result['error_message']}", fg="red")
 
 
 def _run_pipeline_job(
@@ -54,7 +85,7 @@ def _run_pipeline_job(
     """Run a pipeline job and return the lorchestra result.
 
     Args:
-        ctx: Typer context with config, dry_run, verbose
+        ctx: Typer context with config, dry_run, verbose, smoke_namespace
         job_name: The life job name (e.g., "pipeline.ingest")
 
     Returns:
@@ -63,16 +94,21 @@ def _run_pipeline_job(
     config = ctx.obj.get("config", {}) if ctx.obj else {}
     dry_run = ctx.obj.get("dry_run", False) if ctx.obj else False
     verbose = ctx.obj.get("verbose", False) if ctx.obj else False
+    smoke_namespace = ctx.obj.get("smoke_namespace") if ctx.obj else None
+
+    variables = {
+        "dry_run": str(dry_run).lower(),
+        "verbose": str(verbose).lower(),
+        # Always pass smoke_namespace (empty string if not set) to satisfy YAML template
+        "smoke_namespace": smoke_namespace or "",
+    }
 
     result = run_job(
         job_name,
         dry_run=False,  # Don't use job_runner's dry_run - pass to lorchestra instead
         jobs_dir=_get_jobs_dir(),
         event_log=_get_event_log(config),
-        variables={
-            "dry_run": str(dry_run).lower(),
-            "verbose": str(verbose).lower(),
-        },
+        variables=variables,
     )
 
     # Return the lorchestra result from the single step

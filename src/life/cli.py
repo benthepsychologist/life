@@ -66,6 +66,11 @@ def main_callback(
         "-v",
         help="Enable verbose logging",
     ),
+    smoke_namespace: Optional[str] = typer.Option(
+        None,
+        "--smoke-namespace",
+        help="Route pipeline writes to smoke test namespace in BigQuery",
+    ),
 ):
     """
     Life-CLI: Lightweight orchestrator for personal data pipelines.
@@ -79,7 +84,12 @@ def main_callback(
     if isinstance(verbose, str):
         verbose = verbose.lower() not in ("false", "0", "no", "")
 
-    state = {"config": {}, "dry_run": dry_run, "verbose": verbose}
+    state = {
+        "config": {},
+        "dry_run": dry_run,
+        "verbose": verbose,
+        "smoke_namespace": smoke_namespace,
+    }
 
     # Setup logging
     setup_logging(verbose)

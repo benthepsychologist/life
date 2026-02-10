@@ -34,6 +34,7 @@ dependencies = [
     "authctl>=0.1.0",
     "storacle>=0.1.0",
     "workman>=0.1.0",
+    "lorchestra>=0.1.0",
     "jinja2>=3.0",
     "llm>=0.19",
     "pytest>=9.0.2",
@@ -45,6 +46,7 @@ gorch = { path = "/workspace/gorch", editable = true }
 authctl = { path = "/workspace/authctl", editable = true }
 storacle = { path = "/workspace/storacle", editable = true }
 workman = { path = "/workspace/workman", editable = true }
+lorchestra = { path = "/workspace/lorchestra", editable = true }
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.1.0"]

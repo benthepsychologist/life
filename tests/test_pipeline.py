@@ -6,7 +6,6 @@ Copyright 2025 Ben Mensi
 Licensed under the Apache License, Version 2.0
 """
 
-import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -68,104 +67,82 @@ class TestToBool:
 
 
 class TestRunLorchestra:
-    """Tests for run_lorchestra processor function."""
+    """Tests for run_lorchestra processor function (library import version)."""
 
-    def test_run_lorchestra_not_installed(self):
-        """Should return helpful error when lorchestra is not in PATH."""
-        with patch("shutil.which", return_value=None):
+    def test_run_lorchestra_success(self):
+        """Should return success result with run metadata."""
+        # Mock the ExecutionResult
+        mock_exec_result = MagicMock()
+        mock_exec_result.success = True
+        mock_exec_result.run_id = "01HTEST123"
+        mock_exec_result.rows_read = 100
+        mock_exec_result.rows_written = 50
+        mock_exec_result.failed_steps = []
+
+        with patch("life_jobs.pipeline.execute", return_value=mock_exec_result) as mock_exec:
+            result = run_lorchestra("pipeline.ingest")
+
+        assert result["job_id"] == "pipeline.ingest"
+        assert result["success"] is True
+        assert result["run_id"] == "01HTEST123"
+        assert result["rows_read"] == 100
+        assert result["rows_written"] == 50
+        assert result["error_message"] is None
+        assert result["failed_steps"] == []
+
+        # Verify correct envelope was passed
+        mock_exec.assert_called_once()
+        call_args = mock_exec.call_args[0][0]
+        assert call_args["job_id"] == "pipeline.ingest"
+        assert call_args["ctx"]["source"] == "life-cli"
+
+    def test_run_lorchestra_failure_with_step_details(self):
+        """Should capture step-level failure details."""
+        # Mock a failed StepOutcome
+        mock_step = MagicMock()
+        mock_step.step_id = "ingest_data"
+        mock_step.error = {"type": "ValueError", "message": "Invalid data format"}
+
+        mock_exec_result = MagicMock()
+        mock_exec_result.success = False
+        mock_exec_result.run_id = "01HTEST456"
+        mock_exec_result.rows_read = 10
+        mock_exec_result.rows_written = 0
+        mock_exec_result.failed_steps = [mock_step]
+
+        with patch("life_jobs.pipeline.execute", return_value=mock_exec_result):
             result = run_lorchestra("pipeline.ingest")
 
         assert result["job_id"] == "pipeline.ingest"
         assert result["success"] is False
-        assert result["exit_code"] == -1
-        assert "not installed" in result["error_message"]
+        assert result["run_id"] == "01HTEST456"
+        assert result["error_message"] == "Step 'ingest_data' failed: Invalid data format"
+        assert len(result["failed_steps"]) == 1
+        assert result["failed_steps"][0]["step_id"] == "ingest_data"
+        assert result["failed_steps"][0]["error"] == "Invalid data format"
 
-    def test_run_lorchestra_success(self):
-        """Should return success result when lorchestra exits 0."""
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = "Job completed successfully"
-        mock_result.stderr = ""
-
-        with patch("shutil.which", return_value="/usr/bin/lorchestra"):
-            with patch("subprocess.run", return_value=mock_result) as mock_run:
-                result = run_lorchestra("pipeline.ingest")
-
-        assert result["job_id"] == "pipeline.ingest"
-        assert result["success"] is True
-        assert result["exit_code"] == 0
-        assert result["stdout"] == "Job completed successfully"
-        assert result["error_message"] is None
-
-        # Verify correct command was called
-        mock_run.assert_called_once()
-        call_args = mock_run.call_args
-        assert call_args[0][0] == ["lorchestra", "run", "pipeline.ingest"]
-
-    def test_run_lorchestra_failure(self):
-        """Should capture exit code and error message on failure."""
-        mock_result = MagicMock()
-        mock_result.returncode = 1
-        mock_result.stdout = ""
-        mock_result.stderr = "Error: job failed\nDetails here"
-
-        with patch("shutil.which", return_value="/usr/bin/lorchestra"):
-            with patch("subprocess.run", return_value=mock_result):
-                result = run_lorchestra("pipeline.ingest")
+    def test_run_lorchestra_exception_handling(self):
+        """Should handle exceptions gracefully."""
+        with patch("life_jobs.pipeline.execute", side_effect=Exception("Connection timeout")):
+            result = run_lorchestra("pipeline.ingest")
 
         assert result["job_id"] == "pipeline.ingest"
         assert result["success"] is False
-        assert result["exit_code"] == 1
-        assert "exited with code 1" in result["error_message"]
-        assert "Error: job failed" in result["error_message"]
-
-    def test_run_lorchestra_dry_run(self):
-        """Should pass --dry-run flag to lorchestra."""
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = "DRY RUN: would execute..."
-        mock_result.stderr = ""
-
-        with patch("shutil.which", return_value="/usr/bin/lorchestra"):
-            with patch("subprocess.run", return_value=mock_result) as mock_run:
-                result = run_lorchestra("pipeline.ingest", dry_run=True)
-
-        assert result["success"] is True
-
-        # Verify --dry-run was passed
-        call_args = mock_run.call_args
-        assert call_args[0][0] == ["lorchestra", "run", "pipeline.ingest", "--dry-run"]
-
-    def test_run_lorchestra_verbose_streams_output(self):
-        """Verbose mode should not capture output (streams to terminal)."""
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-
-        with patch("shutil.which", return_value="/usr/bin/lorchestra"):
-            with patch("subprocess.run", return_value=mock_result) as mock_run:
-                result = run_lorchestra("pipeline.ingest", verbose=True)
-
-        assert result["success"] is True
-        # In verbose mode, stdout/stderr are empty (streamed, not captured)
-        assert result["stdout"] == ""
-        assert result["stderr"] == ""
-
-        # Verify capture_output was NOT passed (defaults to False)
-        call_args = mock_run.call_args
-        assert "capture_output" not in call_args.kwargs or not call_args.kwargs.get(
-            "capture_output"
-        )
+        assert result["run_id"] is None
+        assert "Failed to execute lorchestra: Connection timeout" in result["error_message"]
+        assert result["failed_steps"] == []
 
     def test_run_lorchestra_duration_tracked(self):
         """Should track execution duration in milliseconds."""
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = ""
-        mock_result.stderr = ""
+        mock_exec_result = MagicMock()
+        mock_exec_result.success = True
+        mock_exec_result.run_id = "01HTEST789"
+        mock_exec_result.rows_read = 0
+        mock_exec_result.rows_written = 0
+        mock_exec_result.failed_steps = []
 
-        with patch("shutil.which", return_value="/usr/bin/lorchestra"):
-            with patch("subprocess.run", return_value=mock_result):
-                result = run_lorchestra("pipeline.ingest")
+        with patch("life_jobs.pipeline.execute", return_value=mock_exec_result):
+            result = run_lorchestra("pipeline.ingest")
 
         assert "duration_ms" in result
         assert isinstance(result["duration_ms"], int)
@@ -173,19 +150,50 @@ class TestRunLorchestra:
 
     def test_run_lorchestra_string_true_converts_to_bool(self):
         """String 'true' from job runner should be converted to boolean."""
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = ""
-        mock_result.stderr = ""
+        mock_exec_result = MagicMock()
+        mock_exec_result.success = True
+        mock_exec_result.run_id = "01HTEST000"
+        mock_exec_result.rows_read = 0
+        mock_exec_result.rows_written = 0
+        mock_exec_result.failed_steps = []
 
-        with patch("shutil.which", return_value="/usr/bin/lorchestra"):
-            with patch("subprocess.run", return_value=mock_result) as mock_run:
-                # Pass string "true" as job runner does
-                result = run_lorchestra("pipeline.ingest", dry_run="true")
+        with patch("life_jobs.pipeline.execute", return_value=mock_exec_result):
+            # Pass string "true" as job runner does - should not error
+            result = run_lorchestra("pipeline.ingest", dry_run="true")
 
-        # Verify --dry-run was passed (conversion worked)
-        call_args = mock_run.call_args
-        assert "--dry-run" in call_args[0][0]
+        assert result["success"] is True
+
+    def test_run_lorchestra_smoke_namespace(self):
+        """Smoke namespace should be passed to lorchestra envelope."""
+        mock_exec_result = MagicMock()
+        mock_exec_result.success = True
+        mock_exec_result.run_id = "01HTEST111"
+        mock_exec_result.rows_read = 0
+        mock_exec_result.rows_written = 0
+        mock_exec_result.failed_steps = []
+
+        with patch("life_jobs.pipeline.execute", return_value=mock_exec_result) as mock_exec:
+            result = run_lorchestra("pipeline.ingest", smoke_namespace="test_ns")
+
+        # Verify smoke_namespace was passed in envelope
+        call_args = mock_exec.call_args[0][0]
+        assert call_args["smoke_namespace"] == "test_ns"
+
+    def test_run_lorchestra_empty_smoke_namespace_ignored(self):
+        """Empty string smoke_namespace should be treated as None."""
+        mock_exec_result = MagicMock()
+        mock_exec_result.success = True
+        mock_exec_result.run_id = "01HTEST222"
+        mock_exec_result.rows_read = 0
+        mock_exec_result.rows_written = 0
+        mock_exec_result.failed_steps = []
+
+        with patch("life_jobs.pipeline.execute", return_value=mock_exec_result) as mock_exec:
+            result = run_lorchestra("pipeline.ingest", smoke_namespace="")
+
+        # Verify smoke_namespace was NOT passed in envelope
+        call_args = mock_exec.call_args[0][0]
+        assert "smoke_namespace" not in call_args
 
 
 # =============================================================================
@@ -320,11 +328,12 @@ class TestVerbJobIdMapping:
             mock.return_value = {
                 "job_id": "mocked",
                 "success": True,
-                "exit_code": 0,
+                "run_id": "01HTEST000",
                 "duration_ms": 100,
-                "stdout": "",
-                "stderr": "",
+                "rows_read": 0,
+                "rows_written": 0,
                 "error_message": None,
+                "failed_steps": [],
             }
             yield mock
 
@@ -393,11 +402,12 @@ class TestPipelineIntegration:
             mock.return_value = {
                 "job_id": "pipeline.project",
                 "success": True,
-                "exit_code": 0,
+                "run_id": "01HTEST000",
                 "duration_ms": 5000,
-                "stdout": "Projection complete",
-                "stderr": "",
+                "rows_read": 100,
+                "rows_written": 50,
                 "error_message": None,
+                "failed_steps": [],
             }
             yield mock
 
@@ -458,13 +468,23 @@ class TestPipelineIntegration:
             mock.return_value = {
                 "job_id": "pipeline.ingest",
                 "success": False,
-                "exit_code": 1,
+                "run_id": "01HTEST999",
                 "duration_ms": 100,
-                "stdout": "",
-                "stderr": "Error occurred",
-                "error_message": "lorchestra exited with code 1",
+                "rows_read": 0,
+                "rows_written": 0,
+                "error_message": "Step 'ingest_data' failed: Connection error",
+                "failed_steps": [{"step_id": "ingest_data", "error": "Connection error"}],
             }
             result = runner.invoke(app, ["pipeline", "ingest"])
 
         assert result.exit_code == 1
         assert "failed" in result.output
+
+    def test_smoke_namespace_propagates_to_lorchestra(self, mock_run_lorchestra):
+        """--smoke-namespace flag should be passed through to lorchestra."""
+        result = runner.invoke(app, ["--smoke-namespace", "test_ns", "pipeline", "ingest"])
+
+        mock_run_lorchestra.assert_called_once()
+        call_kwargs = mock_run_lorchestra.call_args.kwargs
+        # smoke_namespace should be passed
+        assert call_kwargs["smoke_namespace"] == "test_ns"
