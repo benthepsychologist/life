@@ -1,0 +1,46 @@
+job_id: peek
+version: '1.0'
+description: "Peek at data tables via lorchestra"
+defaults:
+  limit: 20
+  filters: []
+  order_by: null
+  columns: ['*']
+
+# Table mappings - accessible via @self.tables
+tables:
+  clients:
+    dataset: derived
+    table: proj_clients
+  sessions:
+    dataset: derived
+    table: proj_sessions
+  form-responses:
+    dataset: derived
+    table: proj_form_responses
+  raw-objects:
+    dataset: raw
+    table: raw_objects
+  canonical-objects:
+    dataset: canonical
+    table: canonical_objects
+  measurement-events:
+    dataset: derived
+    table: measurement_events
+  observations:
+    dataset: derived
+    table: observations
+
+steps:
+- step_id: query
+  op: lorchestra.run
+  params:
+    job_id: peek.table
+    payload:
+      # Dynamic key lookup: @self.tables[@payload.target]
+      dataset: '@self.tables.@payload.target.dataset'
+      table: '@self.tables.@payload.target.table'
+      columns: '@payload.columns'
+      filters: '@payload.filters'
+      limit: '@payload.limit'
+      order_by: '@payload.order_by'

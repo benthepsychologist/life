@@ -1,0 +1,20 @@
+job_id: pipeline
+version: '1.0'
+description: "Run lorchestra data pipelines"
+
+# Pipeline mappings - accessible via @self.pipelines
+pipelines:
+  ingest: pipeline.ingest
+  canonize: pipeline.canonize
+  formation: pipeline.formation
+  project: pipeline.project
+  views: pipeline.views
+  run-all: pipeline.daily_all
+
+steps:
+- step_id: run
+  op: lorchestra.run
+  params:
+    # Dynamic key lookup: @self.pipelines[@payload.target]
+    pipeline_id: '@self.pipelines.@payload.target'
+    smoke_namespace: '@ctx.smoke_namespace'

@@ -1,0 +1,19 @@
+job_id: email.send
+version: '1.0'
+description: "Send a single email via lorchestra → egret"
+
+defaults:
+  is_html: false
+
+steps:
+  - step_id: send
+    op: lorchestra.run
+    params:
+      job_id: email.send
+      payload:
+        to: '@payload.to'
+        subject: '@payload.subject'
+        body: '@payload.body'
+        is_html: '@payload.is_html'
+        provider: '@payload.provider'
+        account: '@payload.account'

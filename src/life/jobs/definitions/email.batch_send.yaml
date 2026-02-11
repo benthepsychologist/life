@@ -1,0 +1,19 @@
+job_id: email.batch_send
+version: '1.0'
+description: "Send batch templated emails via lorchestra → egret"
+
+steps:
+  - step_id: read_template
+    op: file.read
+    params:
+      path: '@payload.template_path'
+
+  - step_id: send
+    op: lorchestra.run
+    params:
+      job_id: email.batch_send
+      payload:
+        template: '@run.read_template.content'
+        items: '@payload.items'
+        provider: '@payload.provider'
+        account: '@payload.account'
